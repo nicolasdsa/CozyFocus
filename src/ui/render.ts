@@ -1,3 +1,4 @@
+import { mountNotesView } from "../features/notes/notesView";
 import { mountTasksView } from "../features/tasks/tasksView";
 import { qs } from "./dom";
 
@@ -82,23 +83,7 @@ export const renderApp = (root: HTMLElement): void => {
             </div>
           </section>
 
-          <aside class="card side-column" data-testid="quick-notes">
-            <div class="card-header">
-              <div class="card-title">Quick Notes</div>
-              <button class="icon-btn" aria-label="Expand">More</button>
-            </div>
-            <div class="card-body notes-body">
-              <textarea
-                class="notes-input"
-                placeholder="Jot down distracting thoughts here..."
-              ></textarea>
-              <span class="notes-status">Auto-saved</span>
-            </div>
-            <div class="notes-footer">
-              <span>Latest: Meeting notes</span>
-              <span class="notes-link">View all</span>
-            </div>
-          </aside>
+          <aside class="card side-column" data-testid="quick-notes"></aside>
         </main>
 
         <footer class="footer" data-testid="player">
@@ -127,6 +112,8 @@ export const renderApp = (root: HTMLElement): void => {
 
   if ("indexedDB" in globalThis) {
     const taskQueue = qs<HTMLElement>(root, "task-queue");
+    const notesPanel = qs<HTMLElement>(root, "quick-notes");
     void mountTasksView(taskQueue);
+    void mountNotesView(notesPanel);
   }
 };

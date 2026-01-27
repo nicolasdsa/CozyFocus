@@ -6,15 +6,21 @@ interface CreateNoteInput {
   dayKey?: string;
 }
 
+let lastNoteTimestamp = 0;
+
 export const addNote = async (
   db: CozyFocusDatabase,
   input: CreateNoteInput
 ): Promise<NoteRecord> => {
+  const now = Date.now();
+  const updatedAt = now <= lastNoteTimestamp ? lastNoteTimestamp + 1 : now;
+  lastNoteTimestamp = updatedAt;
+
   const note: NoteRecord = {
     id: crypto.randomUUID(),
     dayKey: input.dayKey ?? getLocalDayKey(),
     content: input.content,
-    updatedAt: Date.now()
+    updatedAt
   };
 
   await db.put("notes", note);

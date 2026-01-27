@@ -69,6 +69,7 @@ export const mountTasksView = async (
   let tasks: TaskRecord[] = [];
   let inputRow: HTMLDivElement | null = null;
   const pendingAdds = new Map<string, Promise<TaskRecord>>();
+  const resolvedTempIds = new Map<string, string>();
 
   const refresh = async () => {
     tasks = await service.getTasks(dayKey);
@@ -107,8 +108,15 @@ export const mountTasksView = async (
     pendingAdds.set(tempTask.id, addPromise);
     const persisted = await addPromise;
     pendingAdds.delete(tempTask.id);
+    resolvedTempIds.set(tempTask.id, persisted.id);
     tasks = tasks.map((task) => (task.id === tempTask.id ? persisted : task));
-    renderTasks(list, tasks);
+    const tempItem = list.querySelector<HTMLElement>(`[data-task-id="${tempTask.id}"]`);
+    if (tempItem) {
+      tempItem.dataset.taskId = persisted.id;
+      tempItem.setAttribute("data-testid", `task-item-${persisted.id}`);
+    } else {
+      renderTasks(list, tasks);
+    }
   };
 
   const showInputRow = () => {
@@ -178,7 +186,12 @@ export const mountTasksView = async (
           const persisted = await pending;
           taskId = persisted.id;
         } else {
-          return;
+          const resolved = resolvedTempIds.get(taskId);
+          if (resolved) {
+            taskId = resolved;
+          } else {
+            return;
+          }
         }
       }
 
