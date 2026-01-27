@@ -1,0 +1,18 @@
+:root {
+  --color-bg-page: #0f172a;
+  --color-bg-card: rgba(30, 41, 59, 0.7);
+  --color-bg-card-hover: rgba(51, 65, 85, 0.8);
+  --color-border-card: rgba(255, 255, 255, 0.08);
+  --color-text-title: #f1f5f9;
+  --color-text-body: #cbd5e1;
+  --color-text-muted: #94a3b8;
+  --color-brand-primary: #2563eb;
+  --color-brand-primaryHover: #3b82f6;
+  --color-focus-ring: rgba(37, 99, 235, 0.5);
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-heading: "Lexend", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --size-title: 20px;
+  --size-body: 15px;
+  --size-caption: 13px;
+  --radius-card: 24px;
+}
