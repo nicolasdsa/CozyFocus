@@ -1,3 +1,6 @@
+import { mountTasksView } from "../features/tasks/tasksView";
+import { qs } from "./dom";
+
 export const renderApp = (root: HTMLElement): void => {
   root.innerHTML = `
     <div class="app-shell">
@@ -35,29 +38,7 @@ export const renderApp = (root: HTMLElement): void => {
         </header>
 
         <main class="content">
-          <aside class="card side-column" data-testid="task-queue">
-            <div class="card-header">
-              <div class="card-title">Task Queue</div>
-              <button class="icon-btn" aria-label="Add task">+</button>
-            </div>
-            <div class="card-body">
-              <div class="task-item active">
-                <div class="task-check"></div>
-                <div>
-                  <div class="task-title">Draft UI Concepts</div>
-                  <div class="task-meta">Current Focus</div>
-                </div>
-              </div>
-              <div class="task-item">
-                <div class="task-check"></div>
-                <div class="task-title">Review analytics report</div>
-              </div>
-              <div class="task-item">
-                <div class="task-check"></div>
-                <div class="task-title">Email the design team</div>
-              </div>
-            </div>
-          </aside>
+          <aside class="card side-column" data-testid="task-queue"></aside>
 
           <section class="center-stack" data-testid="pomodoro">
             <div class="center-heading">
@@ -143,4 +124,9 @@ export const renderApp = (root: HTMLElement): void => {
       </section>
     </div>
   `;
+
+  if ("indexedDB" in globalThis) {
+    const taskQueue = qs<HTMLElement>(root, "task-queue");
+    void mountTasksView(taskQueue);
+  }
 };

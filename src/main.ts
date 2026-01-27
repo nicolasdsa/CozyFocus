@@ -1,15 +1,9 @@
 import "./styles/base.css";
-import { openDB } from "idb";
 import { renderApp } from "./ui/render";
+import { openCozyDB } from "./storage/db";
 
 const setupDb = async () => {
-  await openDB("cozyfocus", 1, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains("notes")) {
-        db.createObjectStore("notes", { keyPath: "id" });
-      }
-    }
-  });
+  await openCozyDB();
 };
 
 const appRoot = document.querySelector<HTMLDivElement>("#app");
