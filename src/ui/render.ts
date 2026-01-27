@@ -1,4 +1,5 @@
 import { mountNotesView } from "../features/notes/notesView";
+import { mountPomodoroView } from "../features/pomodoro/pomodoroView";
 import { mountTasksView } from "../features/tasks/tasksView";
 import { qs } from "./dom";
 
@@ -41,47 +42,7 @@ export const renderApp = (root: HTMLElement): void => {
         <main class="content">
           <aside class="card side-column" data-testid="task-queue"></aside>
 
-          <section class="center-stack" data-testid="pomodoro">
-            <div class="center-heading">
-              <h2>Ready for a calm 25-minute focus?</h2>
-              <p>Eliminate distractions and find your flow.</p>
-            </div>
-
-            <div class="card center-card">
-              <div class="center-glow"></div>
-              <div class="session-toggle">
-                <button class="is-active">Focus</button>
-                <button>Short Break</button>
-                <button>Long Break</button>
-              </div>
-              <div class="timer-ring">
-                <svg viewBox="0 0 100 100">
-                  <circle class="track" cx="50" cy="50" r="46"></circle>
-                  <circle class="progress" cx="50" cy="50" r="46"></circle>
-                </svg>
-                <div class="timer-display">
-                  <span>25:00</span>
-                  <span>MINUTES</span>
-                </div>
-              </div>
-              <div class="center-actions">
-                <button class="icon-btn" aria-label="Reset">Reset</button>
-                <button class="primary-btn">
-                  <span>Play</span>
-                  Start Focus
-                </button>
-                <button class="icon-btn" aria-label="Tune">Tune</button>
-              </div>
-            </div>
-
-            <div class="session-dots">
-              <span>Today's Sessions</span>
-              <span class="dot is-active"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-            </div>
-          </section>
+          <section class="center-stack" data-testid="pomodoro"></section>
 
           <aside class="card side-column" data-testid="quick-notes"></aside>
         </main>
@@ -113,7 +74,9 @@ export const renderApp = (root: HTMLElement): void => {
   if ("indexedDB" in globalThis) {
     const taskQueue = qs<HTMLElement>(root, "task-queue");
     const notesPanel = qs<HTMLElement>(root, "quick-notes");
+    const pomodoro = qs<HTMLElement>(root, "pomodoro");
     void mountTasksView(taskQueue);
     void mountNotesView(notesPanel);
+    void mountPomodoroView(pomodoro);
   }
 };

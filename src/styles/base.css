@@ -306,7 +306,7 @@ button {
   stroke-linecap: round;
   filter: drop-shadow(0 0 12px rgba(37, 99, 235, 0.5));
   stroke-dasharray: 289.02;
-  stroke-dashoffset: 80;
+  stroke-dashoffset: 0;
 }
 
 .timer-display {
@@ -463,6 +463,13 @@ button {
   color: var(--color-text-muted);
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease;
+}
+
+.icon-btn:disabled,
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .primary-btn {
