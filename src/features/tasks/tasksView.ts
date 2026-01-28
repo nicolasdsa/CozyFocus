@@ -195,6 +195,19 @@ export const mountTasksView = async (
         }
       }
 
+      const taskIndex = tasks.findIndex((task) => task.id === taskId);
+      if (taskIndex >= 0) {
+        const updated: TaskRecord = {
+          ...tasks[taskIndex],
+          completed: target.checked,
+          updatedAt: Date.now()
+        };
+        tasks = tasks.map((task, index) => (index === taskIndex ? updated : task));
+        renderTasks(list, tasks);
+        await service.toggleTask(taskId, target.checked, updated);
+        return;
+      }
+
       await service.toggleTask(taskId, target.checked);
       await refresh();
     })();

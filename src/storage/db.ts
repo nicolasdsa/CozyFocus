@@ -1,5 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import type { SessionType } from "../types";
+import type { MediaPlayerSetting } from "../features/player/playerTypes";
 
 export interface TaskRecord {
   id: string;
@@ -56,12 +57,16 @@ interface CozyFocusDB extends DBSchema {
     key: string;
     value: DayStatsRecord;
   };
+  settings: {
+    key: string;
+    value: MediaPlayerSetting;
+  };
 }
 
 export type CozyFocusDatabase = IDBPDatabase<CozyFocusDB>;
 
 const DB_NAME = "cozyfocus";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export const openCozyDB = (name: string = DB_NAME): Promise<CozyFocusDatabase> => {
   return openDB<CozyFocusDB>(name, DB_VERSION, {
@@ -84,6 +89,10 @@ export const openCozyDB = (name: string = DB_NAME): Promise<CozyFocusDatabase> =
 
       if (!db.objectStoreNames.contains("stats")) {
         db.createObjectStore("stats", { keyPath: "dayKey" });
+      }
+
+      if (!db.objectStoreNames.contains("settings")) {
+        db.createObjectStore("settings");
       }
     }
   });

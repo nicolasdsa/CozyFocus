@@ -4,7 +4,11 @@ import { getLocalDayKey } from "../../storage/dayKey";
 export interface TasksService {
   getTasks: (dayKey?: string) => Promise<TaskRecord[]>;
   addTask: (title: string, dayKey?: string) => Promise<TaskRecord>;
-  toggleTask: (id: string, completed: boolean) => Promise<TaskRecord | null>;
+  toggleTask: (
+    id: string,
+    completed: boolean,
+    existing?: TaskRecord
+  ) => Promise<TaskRecord | null>;
   close: () => Promise<void>;
 }
 
@@ -45,16 +49,17 @@ export const createTasksService = (options?: { dbName?: string }): TasksService 
 
   const toggleTask = async (
     id: string,
-    completed: boolean
+    completed: boolean,
+    existing?: TaskRecord
   ): Promise<TaskRecord | null> => {
     const db = await dbPromise;
-    const existing = await db.get("tasks", id);
-    if (!existing) {
+    const base = existing ?? (await db.get("tasks", id));
+    if (!base) {
       return null;
     }
 
     const updated: TaskRecord = {
-      ...existing,
+      ...base,
       completed,
       updatedAt: Date.now()
     };

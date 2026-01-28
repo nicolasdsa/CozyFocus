@@ -1,5 +1,6 @@
 import { mountNotesView } from "../features/notes/notesView";
 import { mountPomodoroView } from "../features/pomodoro/pomodoroView";
+import { mountPlayerView } from "../features/player/playerView";
 import { mountTasksView } from "../features/tasks/tasksView";
 import { qs } from "./dom";
 
@@ -47,26 +48,7 @@ export const renderApp = (root: HTMLElement): void => {
           <aside class="card side-column" data-testid="quick-notes"></aside>
         </main>
 
-        <footer class="footer" data-testid="player">
-          <div class="player-left">
-            <div class="album" aria-label="Lofi album art"></div>
-            <div class="player-meta">
-              <h4>Lofi Beats - Rainy Cafe</h4>
-              <span>Now Playing - 45% Volume</span>
-            </div>
-            <div class="player-controls">
-              <button aria-label="Previous">Prev</button>
-              <button aria-label="Next">Next</button>
-            </div>
-          </div>
-          <div class="player-right">
-            <div class="volume">
-              <span>Vol</span>
-              <div class="volume-bar"></div>
-            </div>
-            <button aria-label="Fullscreen">Full</button>
-          </div>
-        </footer>
+        <footer class="footer player" data-testid="player"></footer>
       </section>
     </div>
   `;
@@ -75,8 +57,10 @@ export const renderApp = (root: HTMLElement): void => {
     const taskQueue = qs<HTMLElement>(root, "task-queue");
     const notesPanel = qs<HTMLElement>(root, "quick-notes");
     const pomodoro = qs<HTMLElement>(root, "pomodoro");
+    const player = qs<HTMLElement>(root, "player");
     void mountTasksView(taskQueue);
     void mountNotesView(notesPanel);
     void mountPomodoroView(pomodoro);
+    void mountPlayerView(player);
   }
 };

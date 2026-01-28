@@ -4,3 +4,4 @@ export * from "./tasksRepo";
 export * from "./notesRepo";
 export * from "./sessionsRepo";
 export * from "./statsRepo";
+export * from "./settingsRepo";
