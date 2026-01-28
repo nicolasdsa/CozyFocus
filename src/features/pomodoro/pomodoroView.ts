@@ -14,6 +14,7 @@ import {
   playCompletionSound
 } from "../notifications/notify";
 import { onVisibilityChange } from "../visibility/visibility";
+import { dispatchPomodoroCompleted } from "../stealth/stealth";
 
 const RING_RADIUS = 46;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
@@ -192,6 +193,7 @@ export const mountPomodoroView = async (
   };
 
   const handleCompletion = async (completion: PomodoroCompletion) => {
+    dispatchPomodoroCompleted(completion);
     await service.recordSession({
       type: completion.mode,
       durationMs: completion.durationMs,

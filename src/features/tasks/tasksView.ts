@@ -14,7 +14,11 @@ export interface TasksViewHandle {
   destroy: () => Promise<void>;
 }
 
-const renderTasks = (list: HTMLElement, tasks: TaskRecord[]): void => {
+const renderTasks = (
+  list: HTMLElement,
+  tasks: TaskRecord[],
+  editingId: string | null
+): void => {
   list.innerHTML = "";
 
   const currentFocusId = tasks.find((task) => !task.completed)?.id;
@@ -27,17 +31,38 @@ const renderTasks = (list: HTMLElement, tasks: TaskRecord[]): void => {
       item.classList.add("is-completed");
     }
 
-    const label = create<HTMLLabelElement>("label", "task-row");
+    const row = create<HTMLDivElement>("div", "task-row");
     const checkbox = create<HTMLInputElement>("input", "task-check");
     checkbox.type = "checkbox";
     checkbox.checked = task.completed;
 
-    const title = create<HTMLDivElement>("div", "task-title");
-    title.textContent = task.title;
+    row.appendChild(checkbox);
+    if (editingId === task.id) {
+      const input = create<HTMLInputElement>("input", "task-title-input");
+      input.type = "text";
+      input.value = task.title;
+      input.setAttribute("data-testid", `task-title-${task.id}`);
+      row.appendChild(input);
+    } else {
+      const title = create<HTMLDivElement>("div", "task-title");
+      title.textContent = task.title;
+      title.setAttribute("data-testid", `task-title-${task.id}`);
+      row.appendChild(title);
+    }
 
-    label.appendChild(checkbox);
-    label.appendChild(title);
-    item.appendChild(label);
+    item.appendChild(row);
+
+    const trash = create<HTMLButtonElement>("button", "trash-btn");
+    trash.type = "button";
+    trash.dataset.taskId = task.id;
+    trash.setAttribute("aria-label", "Delete task");
+    trash.setAttribute("data-testid", `task-delete-${task.id}`);
+    trash.innerHTML = `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z"></path>
+      </svg>
+    `;
+    item.appendChild(trash);
 
     if (currentFocusId === task.id && !task.completed) {
       const badge = create<HTMLDivElement>("div", "task-meta");
@@ -68,12 +93,15 @@ export const mountTasksView = async (
   const list = qs<HTMLDivElement>(root, "tasks-list");
   let tasks: TaskRecord[] = [];
   let inputRow: HTMLDivElement | null = null;
+  let editingId: string | null = null;
   const pendingAdds = new Map<string, Promise<TaskRecord>>();
   const resolvedTempIds = new Map<string, string>();
+  const deletedTempIds = new Set<string>();
+  const pendingTitleUpdates = new Map<string, string>();
 
   const refresh = async () => {
     tasks = await service.getTasks(dayKey);
-    renderTasks(list, tasks);
+    renderTasks(list, tasks, editingId);
   };
 
   const removeInputRow = () => {
@@ -102,20 +130,39 @@ export const mountTasksView = async (
       updatedAt: now
     };
     tasks = [...tasks, tempTask];
-    renderTasks(list, tasks);
+    renderTasks(list, tasks, editingId);
 
     const addPromise = service.addTask(title, dayKey);
     pendingAdds.set(tempTask.id, addPromise);
     const persisted = await addPromise;
     pendingAdds.delete(tempTask.id);
+
+    if (deletedTempIds.has(tempTask.id)) {
+      deletedTempIds.delete(tempTask.id);
+      await service.deleteTask(persisted.id);
+      return;
+    }
+
     resolvedTempIds.set(tempTask.id, persisted.id);
-    tasks = tasks.map((task) => (task.id === tempTask.id ? persisted : task));
+    const current = tasks.find((task) => task.id === tempTask.id);
+    const merged: TaskRecord = {
+      ...persisted,
+      title: current?.title ?? persisted.title,
+      completed: current?.completed ?? persisted.completed
+    };
+    tasks = tasks.map((task) => (task.id === tempTask.id ? merged : task));
     const tempItem = list.querySelector<HTMLElement>(`[data-task-id="${tempTask.id}"]`);
     if (tempItem) {
       tempItem.dataset.taskId = persisted.id;
       tempItem.setAttribute("data-testid", `task-item-${persisted.id}`);
     } else {
-      renderTasks(list, tasks);
+      renderTasks(list, tasks, editingId);
+    }
+
+    const pendingTitle = pendingTitleUpdates.get(tempTask.id);
+    if (pendingTitle) {
+      pendingTitleUpdates.delete(tempTask.id);
+      await service.updateTitle(persisted.id, pendingTitle);
     }
   };
 
@@ -153,6 +200,77 @@ export const mountTasksView = async (
     });
   };
 
+  const resolveTaskId = async (taskId: string): Promise<string | null> => {
+    if (!taskId.startsWith("temp-")) {
+      return taskId;
+    }
+    const pending = pendingAdds.get(taskId);
+    if (pending) {
+      const persisted = await pending;
+      return persisted.id;
+    }
+    const resolved = resolvedTempIds.get(taskId);
+    return resolved ?? null;
+  };
+
+  const startEditing = (taskId: string) => {
+    editingId = taskId;
+    renderTasks(list, tasks, editingId);
+    const input = list.querySelector<HTMLInputElement>(
+      `[data-testid="task-title-${taskId}"]`
+    );
+    if (input) {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+  };
+
+  const commitEdit = async (taskId: string, input: HTMLInputElement) => {
+    const title = input.value.trim();
+    editingId = null;
+    if (!title) {
+      renderTasks(list, tasks, editingId);
+      return;
+    }
+
+    const taskIndex = tasks.findIndex((task) => task.id === taskId);
+    if (taskIndex >= 0) {
+      const updated: TaskRecord = {
+        ...tasks[taskIndex],
+        title,
+        updatedAt: Date.now()
+      };
+      tasks = tasks.map((task, index) => (index === taskIndex ? updated : task));
+    }
+    renderTasks(list, tasks, editingId);
+
+    if (taskId.startsWith("temp-")) {
+      const pending = pendingAdds.get(taskId);
+      if (pending) {
+        const persisted = await pending;
+        await service.updateTitle(persisted.id, title);
+        return;
+      }
+      const resolvedTemp = resolvedTempIds.get(taskId);
+      if (resolvedTemp) {
+        await service.updateTitle(resolvedTemp, title);
+        return;
+      }
+      pendingTitleUpdates.set(taskId, title);
+      return;
+    }
+
+    const resolved = await resolveTaskId(taskId);
+    if (resolved) {
+      await service.updateTitle(resolved, title);
+    }
+  };
+
+  const cancelEdit = () => {
+    editingId = null;
+    renderTasks(list, tasks, editingId);
+  };
+
   root.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) {
@@ -161,6 +279,107 @@ export const mountTasksView = async (
 
     if (target.closest('[data-testid="tasks-add"]')) {
       showInputRow();
+      return;
+    }
+
+    const deleteButton = target.closest<HTMLButtonElement>(".trash-btn");
+    if (deleteButton?.dataset.taskId) {
+      const taskId = deleteButton.dataset.taskId;
+      editingId = editingId === taskId ? null : editingId;
+      tasks = tasks.filter((task) => task.id !== taskId);
+      renderTasks(list, tasks, editingId);
+      if (taskId.startsWith("temp-")) {
+        deletedTempIds.add(taskId);
+        return;
+      }
+      void service.deleteTask(taskId);
+    }
+  });
+
+  list.addEventListener("dblclick", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const title = target.closest<HTMLElement>(".task-title");
+    if (!title) {
+      return;
+    }
+    const item = title.closest<HTMLElement>("[data-task-id]");
+    if (!item?.dataset.taskId) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    startEditing(item.dataset.taskId);
+  });
+
+  list.addEventListener("keydown", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) {
+      return;
+    }
+    if (!target.classList.contains("task-title-input")) {
+      return;
+    }
+    const item = target.closest<HTMLElement>("[data-task-id]");
+    if (!item?.dataset.taskId) {
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (target.dataset.committing === "true") {
+        return;
+      }
+      target.dataset.committing = "true";
+      void commitEdit(item.dataset.taskId, target);
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelEdit();
+    }
+  });
+
+  list.addEventListener("focusout", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) {
+      return;
+    }
+    if (!target.classList.contains("task-title-input")) {
+      return;
+    }
+    if (target.dataset.committing === "true") {
+      return;
+    }
+    const item = target.closest<HTMLElement>("[data-task-id]");
+    if (!item?.dataset.taskId) {
+      return;
+    }
+    target.dataset.committing = "true";
+    void commitEdit(item.dataset.taskId, target);
+  });
+
+  list.addEventListener("mouseover", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const button = target.closest<HTMLButtonElement>(".trash-btn");
+    if (button) {
+      button.dataset.hover = "true";
+    }
+  });
+
+  list.addEventListener("mouseout", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const button = target.closest<HTMLButtonElement>(".trash-btn");
+    if (button) {
+      delete button.dataset.hover;
     }
   });
 
@@ -180,20 +399,11 @@ export const mountTasksView = async (
 
     void (async () => {
       let taskId = item.dataset.taskId;
-      if (taskId.startsWith("temp-")) {
-        const pending = pendingAdds.get(taskId);
-        if (pending) {
-          const persisted = await pending;
-          taskId = persisted.id;
-        } else {
-          const resolved = resolvedTempIds.get(taskId);
-          if (resolved) {
-            taskId = resolved;
-          } else {
-            return;
-          }
-        }
+      const resolved = await resolveTaskId(taskId);
+      if (!resolved) {
+        return;
       }
+      taskId = resolved;
 
       const taskIndex = tasks.findIndex((task) => task.id === taskId);
       if (taskIndex >= 0) {
@@ -203,7 +413,7 @@ export const mountTasksView = async (
           updatedAt: Date.now()
         };
         tasks = tasks.map((task, index) => (index === taskIndex ? updated : task));
-        renderTasks(list, tasks);
+        renderTasks(list, tasks, editingId);
         await service.toggleTask(taskId, target.checked, updated);
         return;
       }

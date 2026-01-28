@@ -1,0 +1,39 @@
+.note-card {
+  position: relative;
+  padding-right: 38px;
+}
+
+.note-card .trash-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.35);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease;
+  cursor: pointer;
+}
+
+.note-card:hover .trash-btn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.note-card .trash-btn:hover,
+.note-card .trash-btn[data-hover="true"] {
+  color: var(--color-danger-cozy);
+}
+
+.note-card .trash-btn svg {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+}

@@ -1,5 +1,7 @@
 @import "./tokens.css";
 @import "./components/card.css";
+@import "./components/tasks.css";
+@import "./components/notes.css";
 
 @font-face {
   font-family: "Inter";
@@ -33,6 +35,10 @@ body {
   overflow: hidden;
 }
 
+body.stealth .app-shell {
+  opacity: 0;
+}
+
 h1,
 h2,
 h3,
@@ -55,6 +61,7 @@ button {
   height: 100%;
   position: relative;
   background: radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.15), transparent 50%);
+  transition: opacity 0.2s ease;
 }
 
 .app-shell::before {
@@ -153,6 +160,26 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.stealth-btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.stealth-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-title);
 }
 
 .status-pill {

@@ -34,9 +34,7 @@ describe("notes", () => {
     container.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
     await delay(0);
 
-    const cards = root.querySelectorAll(
-      '[data-testid^="note-"]:not([data-testid^="note-editor-"])'
-    );
+    const cards = root.querySelectorAll('div[data-testid^="note-"]');
     expect(cards).toHaveLength(1);
 
     const editor = root.querySelector<HTMLTextAreaElement>(
@@ -115,9 +113,7 @@ describe("notes", () => {
     const root = createRoot();
     const view = await mountNotesView(root, { dbName, dayKey, debounceMs: 10 });
 
-    const cards = root.querySelectorAll(
-      '[data-testid^="note-"]:not([data-testid^="note-editor-"])'
-    );
+    const cards = root.querySelectorAll('div[data-testid^="note-"]');
     expect(cards).toHaveLength(1);
     expect(root.textContent).toContain("Remember to stretch");
 

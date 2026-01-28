@@ -9,6 +9,8 @@ export interface TasksService {
     completed: boolean,
     existing?: TaskRecord
   ) => Promise<TaskRecord | null>;
+  updateTitle: (id: string, title: string) => Promise<TaskRecord | null>;
+  deleteTask: (id: string) => Promise<void>;
   close: () => Promise<void>;
 }
 
@@ -68,6 +70,28 @@ export const createTasksService = (options?: { dbName?: string }): TasksService 
     return updated;
   };
 
+  const updateTitle = async (id: string, title: string): Promise<TaskRecord | null> => {
+    const db = await dbPromise;
+    const existing = await db.get("tasks", id);
+    if (!existing) {
+      return null;
+    }
+
+    const updated: TaskRecord = {
+      ...existing,
+      title,
+      updatedAt: Date.now()
+    };
+
+    await db.put("tasks", updated);
+    return updated;
+  };
+
+  const deleteTask = async (id: string): Promise<void> => {
+    const db = await dbPromise;
+    await db.delete("tasks", id);
+  };
+
   const close = async (): Promise<void> => {
     const db = await dbPromise;
     db.close();
@@ -77,6 +101,8 @@ export const createTasksService = (options?: { dbName?: string }): TasksService 
     getTasks,
     addTask,
     toggleTask,
+    updateTitle,
+    deleteTask,
     close
   };
 };

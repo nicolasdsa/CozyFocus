@@ -1,6 +1,7 @@
 import { mountNotesView } from "../features/notes/notesView";
 import { mountPomodoroView } from "../features/pomodoro/pomodoroView";
 import { mountPlayerView } from "../features/player/playerView";
+import { mountStealth } from "../features/stealth/stealth";
 import { mountTasksView } from "../features/tasks/tasksView";
 import { qs } from "./dom";
 
@@ -36,6 +37,7 @@ export const renderApp = (root: HTMLElement): void => {
               <span class="status-dot"></span>
               <span>Offline Synced</span>
             </div>
+            <button class="stealth-btn" data-testid="stealth-toggle">Stealth</button>
             <div class="avatar" aria-label="User avatar"></div>
           </div>
         </header>
@@ -63,4 +65,7 @@ export const renderApp = (root: HTMLElement): void => {
     void mountPomodoroView(pomodoro);
     void mountPlayerView(player);
   }
+
+  const stealthToggle = qs<HTMLButtonElement>(root, "stealth-toggle");
+  mountStealth(stealthToggle);
 };

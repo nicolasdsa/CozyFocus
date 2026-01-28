@@ -5,6 +5,7 @@ export interface NotesService {
   getNotes: (dayKey?: string) => Promise<NoteRecord[]>;
   addNote: (content?: string, dayKey?: string) => Promise<NoteRecord>;
   updateNote: (id: string, content: string) => Promise<NoteRecord | null>;
+  deleteNote: (id: string) => Promise<void>;
   close: () => Promise<void>;
 }
 
@@ -58,6 +59,11 @@ export const createNotesService = (options?: { dbName?: string }): NotesService 
     return updated;
   };
 
+  const deleteNote = async (id: string): Promise<void> => {
+    const db = await dbPromise;
+    await db.delete("notes", id);
+  };
+
   const close = async (): Promise<void> => {
     const db = await dbPromise;
     db.close();
@@ -67,6 +73,7 @@ export const createNotesService = (options?: { dbName?: string }): NotesService 
     getNotes,
     addNote,
     updateNote,
+    deleteNote,
     close
   };
 };

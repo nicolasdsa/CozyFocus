@@ -39,3 +39,10 @@ export const getNotesByDay = async (
     return a.id.localeCompare(b.id);
   });
 };
+
+export const deleteNote = async (
+  db: CozyFocusDatabase,
+  id: string
+): Promise<void> => {
+  await db.delete("notes", id);
+};

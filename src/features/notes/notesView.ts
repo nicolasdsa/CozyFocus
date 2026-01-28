@@ -48,6 +48,7 @@ export const mountNotesView = async (
   const saveTimers = new Map<string, number>();
   const pendingAdds = new Map<string, Promise<NoteRecord>>();
   const resolvedTempIds = new Map<string, string>();
+  const deletedTempIds = new Set<string>();
 
   const focusEditor = (noteId: string) => {
     const editor = root.querySelector<HTMLTextAreaElement>(
@@ -117,6 +118,19 @@ export const mountNotesView = async (
       });
 
       card.appendChild(editor);
+
+      const trash = create<HTMLButtonElement>("button", "trash-btn");
+      trash.type = "button";
+      trash.dataset.noteId = note.id;
+      trash.setAttribute("aria-label", "Delete note");
+      trash.setAttribute("data-testid", `note-delete-${note.id}`);
+      trash.innerHTML = `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z"></path>
+        </svg>
+      `;
+
+      card.appendChild(trash);
       list.appendChild(card);
     });
   };
@@ -170,6 +184,13 @@ export const mountNotesView = async (
     pendingAdds.set(tempNote.id, addPromise);
     const persisted = await addPromise;
     pendingAdds.delete(tempNote.id);
+
+    if (deletedTempIds.has(tempNote.id)) {
+      deletedTempIds.delete(tempNote.id);
+      await service.deleteNote(persisted.id);
+      return;
+    }
+
     resolvedTempIds.set(tempNote.id, persisted.id);
     state = {
       ...state,
@@ -183,6 +204,38 @@ export const mountNotesView = async (
     }
   };
 
+  const resolveNoteId = async (noteId: string): Promise<string | null> => {
+    if (!noteId.startsWith("temp-")) {
+      return noteId;
+    }
+    const pending = pendingAdds.get(noteId);
+    if (pending) {
+      const persisted = await pending;
+      return persisted.id;
+    }
+    const resolved = resolvedTempIds.get(noteId);
+    return resolved ?? null;
+  };
+
+  const selectMostRecent = (notes: NoteRecord[]) => {
+    const latest = notes[notes.length - 1];
+    if (latest) {
+      state = {
+        ...state,
+        selectedId: latest.id,
+        editingId: state.editingId === latest.id ? latest.id : null
+      };
+      renderNotes();
+      return;
+    }
+    state = {
+      ...state,
+      selectedId: null,
+      editingId: null
+    };
+    renderNotes();
+  };
+
   root.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) {
@@ -194,11 +247,67 @@ export const mountNotesView = async (
       return;
     }
 
+    const deleteButton = target.closest<HTMLButtonElement>(".trash-btn");
+    if (deleteButton?.dataset.noteId) {
+      const noteId = deleteButton.dataset.noteId;
+      const existingTimer = saveTimers.get(noteId);
+      if (existingTimer) {
+        window.clearTimeout(existingTimer);
+        saveTimers.delete(noteId);
+      }
+      state = {
+        ...state,
+        notes: state.notes.filter((note) => note.id !== noteId),
+        selectedId: state.selectedId === noteId ? null : state.selectedId,
+        editingId: state.editingId === noteId ? null : state.editingId
+      };
+      const remaining = state.notes;
+      if (state.selectedId === null) {
+        selectMostRecent(remaining);
+      } else {
+        renderNotes();
+      }
+
+      if (noteId.startsWith("temp-")) {
+        deletedTempIds.add(noteId);
+        return;
+      }
+      void (async () => {
+        const resolved = await resolveNoteId(noteId);
+        if (resolved) {
+          await service.deleteNote(resolved);
+        }
+      })();
+      return;
+    }
+
     const card = target.closest<HTMLElement>("[data-note-id]");
     if (card?.dataset.noteId) {
       if (card.dataset.noteId !== state.selectedId) {
         selectNote(card.dataset.noteId);
       }
+    }
+  });
+
+  list.addEventListener("mouseover", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const button = target.closest<HTMLButtonElement>(".trash-btn");
+    if (button) {
+      button.dataset.hover = "true";
+    }
+  });
+
+  list.addEventListener("mouseout", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const button = target.closest<HTMLButtonElement>(".trash-btn");
+    if (button) {
+      delete button.dataset.hover;
     }
   });
 

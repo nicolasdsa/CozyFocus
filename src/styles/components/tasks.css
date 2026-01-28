@@ -1,0 +1,63 @@
+.task-item {
+  position: relative;
+  padding-right: 40px;
+}
+
+.task-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.task-title-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--color-text-title);
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 10px;
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.task-title-input:focus {
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.task-item .trash-btn {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.3);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease;
+  cursor: pointer;
+}
+
+.task-item:hover .trash-btn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.task-item .trash-btn:hover,
+.task-item .trash-btn[data-hover="true"] {
+  color: var(--color-danger-cozy);
+}
+
+.task-item .trash-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}

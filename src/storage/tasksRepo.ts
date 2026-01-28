@@ -31,3 +31,30 @@ export const getTasksByDay = async (
 ): Promise<TaskRecord[]> => {
   return db.getAllFromIndex("tasks", "dayKey", dayKey);
 };
+
+export const deleteTask = async (
+  db: CozyFocusDatabase,
+  id: string
+): Promise<void> => {
+  await db.delete("tasks", id);
+};
+
+export const updateTaskTitle = async (
+  db: CozyFocusDatabase,
+  id: string,
+  title: string
+): Promise<TaskRecord | null> => {
+  const existing = await db.get("tasks", id);
+  if (!existing) {
+    return null;
+  }
+
+  const updated: TaskRecord = {
+    ...existing,
+    title,
+    updatedAt: Date.now()
+  };
+
+  await db.put("tasks", updated);
+  return updated;
+};
