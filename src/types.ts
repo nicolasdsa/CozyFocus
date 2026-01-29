@@ -7,6 +7,12 @@ export type PomodoroDefaultsSetting = {
   updatedAt: number;
 };
 
+export type TaskFocusSetting = {
+  dayKey: string;
+  taskId: string | null;
+  updatedAt: number;
+};
+
 export interface NoteEntry {
   id: string;
   content: string;

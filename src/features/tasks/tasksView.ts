@@ -17,39 +17,56 @@ export interface TasksViewHandle {
 const renderTasks = (
   list: HTMLElement,
   tasks: TaskRecord[],
-  editingId: string | null
+  editingId: string | null,
+  currentFocusId: string | null,
+  waveTaskIds: Set<string>
 ): void => {
   list.innerHTML = "";
-
-  const currentFocusId = tasks.find((task) => !task.completed)?.id;
 
   tasks.forEach((task) => {
     const item = create<HTMLDivElement>("div", "task-item");
     item.dataset.taskId = task.id;
     item.setAttribute("data-testid", `task-item-${task.id}`);
     if (task.completed) {
-      item.classList.add("is-completed");
+      item.classList.add("task--completed");
+    }
+    if (currentFocusId === task.id && !task.completed) {
+      item.classList.add("task--focus");
+    }
+    if (waveTaskIds.has(task.id)) {
+      item.classList.add("task--wave");
     }
 
     const row = create<HTMLDivElement>("div", "task-row");
-    const checkbox = create<HTMLInputElement>("input", "task-check");
+    const checkbox = create<HTMLInputElement>("input", "task-checkbox");
     checkbox.type = "checkbox";
     checkbox.checked = task.completed;
+    if (task.completed) {
+      checkbox.classList.add("is-checked");
+    }
 
     row.appendChild(checkbox);
+    const content = create<HTMLDivElement>("div", "task-content");
     if (editingId === task.id) {
       const input = create<HTMLInputElement>("input", "task-title-input");
       input.type = "text";
       input.value = task.title;
       input.setAttribute("data-testid", `task-title-${task.id}`);
-      row.appendChild(input);
+      content.appendChild(input);
     } else {
       const title = create<HTMLDivElement>("div", "task-title");
       title.textContent = task.title;
       title.setAttribute("data-testid", `task-title-${task.id}`);
-      row.appendChild(title);
+      content.appendChild(title);
     }
 
+    if (currentFocusId === task.id && !task.completed) {
+      const badge = create<HTMLDivElement>("div", "task-meta");
+      badge.textContent = "Current Focus";
+      content.appendChild(badge);
+    }
+
+    row.appendChild(content);
     item.appendChild(row);
 
     const trash = create<HTMLButtonElement>("button", "trash-btn");
@@ -63,12 +80,6 @@ const renderTasks = (
       </svg>
     `;
     item.appendChild(trash);
-
-    if (currentFocusId === task.id && !task.completed) {
-      const badge = create<HTMLDivElement>("div", "task-meta");
-      badge.textContent = "Current Focus";
-      item.appendChild(badge);
-    }
 
     list.appendChild(item);
   });
@@ -94,6 +105,8 @@ export const mountTasksView = async (
   let tasks: TaskRecord[] = [];
   let inputRow: HTMLDivElement | null = null;
   let editingId: string | null = null;
+  let currentFocusId: string | null = null;
+  const waveTaskIds = new Set<string>();
   const pendingAdds = new Map<string, Promise<TaskRecord>>();
   const resolvedTempIds = new Map<string, string>();
   const deletedTempIds = new Set<string>();
@@ -101,7 +114,15 @@ export const mountTasksView = async (
 
   const refresh = async () => {
     tasks = await service.getTasks(dayKey);
-    renderTasks(list, tasks, editingId);
+    currentFocusId = await service.getCurrentFocus(dayKey);
+    if (currentFocusId) {
+      const focusedTask = tasks.find((task) => task.id === currentFocusId);
+      if (!focusedTask || focusedTask.completed) {
+        currentFocusId = null;
+        await service.setCurrentFocus(dayKey, null);
+      }
+    }
+    renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
   };
 
   const removeInputRow = () => {
@@ -130,7 +151,7 @@ export const mountTasksView = async (
       updatedAt: now
     };
     tasks = [...tasks, tempTask];
-    renderTasks(list, tasks, editingId);
+    renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
 
     const addPromise = service.addTask(title, dayKey);
     pendingAdds.set(tempTask.id, addPromise);
@@ -151,12 +172,27 @@ export const mountTasksView = async (
       completed: current?.completed ?? persisted.completed
     };
     tasks = tasks.map((task) => (task.id === tempTask.id ? merged : task));
+    if (currentFocusId === tempTask.id) {
+      currentFocusId = persisted.id;
+      void service.setCurrentFocus(dayKey, persisted.id);
+    }
     const tempItem = list.querySelector<HTMLElement>(`[data-task-id="${tempTask.id}"]`);
     if (tempItem) {
       tempItem.dataset.taskId = persisted.id;
       tempItem.setAttribute("data-testid", `task-item-${persisted.id}`);
+      const titleEl = tempItem.querySelector<HTMLElement>(
+        ".task-title, .task-title-input"
+      );
+      if (titleEl) {
+        titleEl.setAttribute("data-testid", `task-title-${persisted.id}`);
+      }
+      const trashButton = tempItem.querySelector<HTMLButtonElement>(".trash-btn");
+      if (trashButton) {
+        trashButton.dataset.taskId = persisted.id;
+        trashButton.setAttribute("data-testid", `task-delete-${persisted.id}`);
+      }
     } else {
-      renderTasks(list, tasks, editingId);
+      renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
     }
 
     const pendingTitle = pendingTitleUpdates.get(tempTask.id);
@@ -174,11 +210,21 @@ export const mountTasksView = async (
     }
 
     inputRow = create<HTMLDivElement>("div", "task-item is-editing");
-    const input = create<HTMLInputElement>("input", "task-input");
+    const row = create<HTMLDivElement>("div", "task-row");
+    const checkbox = create<HTMLInputElement>("input", "task-checkbox");
+    checkbox.type = "checkbox";
+    checkbox.disabled = true;
+    checkbox.tabIndex = -1;
+    checkbox.setAttribute("aria-hidden", "true");
+    const content = create<HTMLDivElement>("div", "task-content");
+    const input = create<HTMLInputElement>("input", "task-title-input");
     input.type = "text";
     input.placeholder = "Add a task...";
     input.setAttribute("data-testid", "tasks-input");
-    inputRow.appendChild(input);
+    content.appendChild(input);
+    row.appendChild(checkbox);
+    row.appendChild(content);
+    inputRow.appendChild(row);
 
     list.prepend(inputRow);
     input.focus();
@@ -215,7 +261,7 @@ export const mountTasksView = async (
 
   const startEditing = (taskId: string) => {
     editingId = taskId;
-    renderTasks(list, tasks, editingId);
+    renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
     const input = list.querySelector<HTMLInputElement>(
       `[data-testid="task-title-${taskId}"]`
     );
@@ -229,7 +275,7 @@ export const mountTasksView = async (
     const title = input.value.trim();
     editingId = null;
     if (!title) {
-      renderTasks(list, tasks, editingId);
+      renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
       return;
     }
 
@@ -242,7 +288,7 @@ export const mountTasksView = async (
       };
       tasks = tasks.map((task, index) => (index === taskIndex ? updated : task));
     }
-    renderTasks(list, tasks, editingId);
+    renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
 
     if (taskId.startsWith("temp-")) {
       const pending = pendingAdds.get(taskId);
@@ -268,7 +314,37 @@ export const mountTasksView = async (
 
   const cancelEdit = () => {
     editingId = null;
-    renderTasks(list, tasks, editingId);
+    renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
+  };
+
+  const triggerWave = (taskId: string) => {
+    if (waveTaskIds.has(taskId)) {
+      return;
+    }
+    waveTaskIds.add(taskId);
+    renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
+    window.setTimeout(() => {
+      if (!waveTaskIds.has(taskId)) {
+        return;
+      }
+      waveTaskIds.delete(taskId);
+      renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
+    }, 600);
+  };
+
+  const deleteTaskFromUi = (taskId: string) => {
+    editingId = editingId === taskId ? null : editingId;
+    tasks = tasks.filter((task) => task.id !== taskId);
+    if (currentFocusId === taskId) {
+      currentFocusId = null;
+      void service.setCurrentFocus(dayKey, null);
+    }
+    renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
+    if (taskId.startsWith("temp-")) {
+      deletedTempIds.add(taskId);
+      return;
+    }
+    void service.deleteTask(taskId);
   };
 
   root.addEventListener("click", (event) => {
@@ -280,19 +356,6 @@ export const mountTasksView = async (
     if (target.closest('[data-testid="tasks-add"]')) {
       showInputRow();
       return;
-    }
-
-    const deleteButton = target.closest<HTMLButtonElement>(".trash-btn");
-    if (deleteButton?.dataset.taskId) {
-      const taskId = deleteButton.dataset.taskId;
-      editingId = editingId === taskId ? null : editingId;
-      tasks = tasks.filter((task) => task.id !== taskId);
-      renderTasks(list, tasks, editingId);
-      if (taskId.startsWith("temp-")) {
-        deletedTempIds.add(taskId);
-        return;
-      }
-      void service.deleteTask(taskId);
     }
   });
 
@@ -407,19 +470,71 @@ export const mountTasksView = async (
 
       const taskIndex = tasks.findIndex((task) => task.id === taskId);
       if (taskIndex >= 0) {
+        const wasCompleted = tasks[taskIndex]?.completed ?? false;
         const updated: TaskRecord = {
           ...tasks[taskIndex],
           completed: target.checked,
           updatedAt: Date.now()
         };
+        if (!wasCompleted && target.checked) {
+          triggerWave(taskId);
+        }
+        if (target.checked && currentFocusId === taskId) {
+          currentFocusId = null;
+          await service.setCurrentFocus(dayKey, null);
+        }
         tasks = tasks.map((task, index) => (index === taskIndex ? updated : task));
-        renderTasks(list, tasks, editingId);
+        renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
         await service.toggleTask(taskId, target.checked, updated);
         return;
       }
 
       await service.toggleTask(taskId, target.checked);
       await refresh();
+    })();
+  });
+
+  list.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const deleteButton = target.closest<HTMLButtonElement>(".trash-btn");
+    if (deleteButton?.dataset.taskId) {
+      event.stopPropagation();
+      deleteTaskFromUi(deleteButton.dataset.taskId);
+      return;
+    }
+    if (target.closest(".task-checkbox")) {
+      event.stopPropagation();
+      return;
+    }
+    if (target.closest(".task-title-input")) {
+      return;
+    }
+    const item = target.closest<HTMLElement>("[data-task-id]");
+    if (!item?.dataset.taskId) {
+      return;
+    }
+    const taskId = item.dataset.taskId;
+    const task = tasks.find((entry) => entry.id === taskId);
+    if (!task || task.completed) {
+      return;
+    }
+    if (currentFocusId === taskId) {
+      return;
+    }
+    void (async () => {
+      currentFocusId = taskId;
+      renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
+      const resolved = await resolveTaskId(taskId);
+      if (resolved) {
+        if (resolved !== taskId) {
+          currentFocusId = resolved;
+          renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
+        }
+        await service.setCurrentFocus(dayKey, resolved);
+      }
     })();
   });
 

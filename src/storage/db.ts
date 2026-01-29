@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
-import type { PomodoroDefaultsSetting, SessionType } from "../types";
+import type { PomodoroDefaultsSetting, SessionType, TaskFocusSetting } from "../types";
 import type { MediaPlayerSetting } from "../features/player/playerTypes";
 
 export interface TaskRecord {
@@ -59,7 +59,7 @@ interface CozyFocusDB extends DBSchema {
   };
   settings: {
     key: string;
-    value: MediaPlayerSetting | PomodoroDefaultsSetting;
+    value: MediaPlayerSetting | PomodoroDefaultsSetting | TaskFocusSetting;
   };
 }
 
