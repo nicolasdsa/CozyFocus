@@ -74,7 +74,10 @@ export const mountNotesView = async (
         card.classList.add("is-editing");
       }
 
-      const editor = create<HTMLTextAreaElement>("textarea", "note-editor");
+      const editor = create<HTMLTextAreaElement>(
+        "textarea",
+        "note-editor note-content--with-trash-gap"
+      );
       editor.value = note.content;
       editor.textContent = note.content;
       editor.readOnly = state.editingId !== note.id;
@@ -119,7 +122,7 @@ export const mountNotesView = async (
 
       card.appendChild(editor);
 
-      const trash = create<HTMLButtonElement>("button", "trash-btn");
+      const trash = create<HTMLButtonElement>("button", "trash-btn note-trash--bl");
       trash.type = "button";
       trash.dataset.noteId = note.id;
       trash.setAttribute("aria-label", "Delete note");

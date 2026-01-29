@@ -1,11 +1,9 @@
 .note-card {
   position: relative;
-  padding-right: 38px;
 }
 
 .note-card .trash-btn {
   position: absolute;
-  right: 8px;
   bottom: 8px;
   width: 26px;
   height: 26px;
@@ -20,6 +18,15 @@
   transform: translateY(4px);
   transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease;
   cursor: pointer;
+}
+
+.note-card .trash-btn.note-trash--bl {
+  left: 8px;
+  right: auto;
+}
+
+.note-editor.note-content--with-trash-gap {
+  padding-bottom: 26px;
 }
 
 .note-card:hover .trash-btn {
