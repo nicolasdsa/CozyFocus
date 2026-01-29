@@ -75,7 +75,7 @@ export const playSoundNTimes = async (
         resolve();
         return;
       }
-      window.setTimeout(resolve, ms);
+      globalThis.setTimeout(resolve, ms);
     });
 
   for (let index = 0; index < count; index += 1) {

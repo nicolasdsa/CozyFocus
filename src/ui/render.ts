@@ -2,6 +2,7 @@ import { mountNotesView } from "../features/notes/notesView";
 import { mountPomodoroView } from "../features/pomodoro/pomodoroView";
 import { mountPlayerView } from "../features/player/playerView";
 import { mountStealth } from "../features/stealth/stealth";
+import { mountStreakView } from "../features/streak/streakView";
 import { mountTasksView } from "../features/tasks/tasksView";
 import { qs } from "./dom";
 
@@ -33,10 +34,7 @@ export const renderApp = (root: HTMLElement): void => {
             <span class="header-subtitle">Deep Work Nook</span>
           </div>
           <div class="header-status">
-            <div class="status-pill">
-              <span class="status-dot"></span>
-              <span>Offline Synced</span>
-            </div>
+            <div class="streak-pill" data-testid="streak-badge"></div>
             <button class="stealth-btn" data-testid="stealth-toggle">Stealth</button>
             <div class="avatar" aria-label="User avatar"></div>
           </div>
@@ -60,10 +58,12 @@ export const renderApp = (root: HTMLElement): void => {
     const notesPanel = qs<HTMLElement>(root, "quick-notes");
     const pomodoro = qs<HTMLElement>(root, "pomodoro");
     const player = qs<HTMLElement>(root, "player");
+    const streakBadge = qs<HTMLElement>(root, "streak-badge");
     void mountTasksView(taskQueue);
     void mountNotesView(notesPanel);
     void mountPomodoroView(pomodoro);
     void mountPlayerView(player);
+    void mountStreakView(streakBadge);
   }
 
   const stealthToggle = qs<HTMLButtonElement>(root, "stealth-toggle");

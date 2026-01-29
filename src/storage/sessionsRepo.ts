@@ -48,3 +48,11 @@ export const getSessionsByDay = async (
 ): Promise<SessionRecord[]> => {
   return db.getAllFromIndex("sessions", "dayKey", dayKey);
 };
+
+export const hasAnySessionForDay = async (
+  db: CozyFocusDatabase,
+  dayKey: string
+): Promise<boolean> => {
+  const record = await db.getFromIndex("sessions", "dayKey", dayKey);
+  return Boolean(record);
+};

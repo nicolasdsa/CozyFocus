@@ -10,6 +10,8 @@
   --color-brand-primary: #2563eb;
   --color-brand-primaryHover: #3b82f6;
   --color-focus-ring: rgba(37, 99, 235, 0.5);
+  --color-streak-icon: #fbbf24;
+  --color-streak-dim-opacity: 0.55;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-heading: "Lexend", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --size-title: 20px;

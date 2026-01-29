@@ -16,6 +16,7 @@ import {
 } from "../notifications/notify";
 import { onVisibilityChange } from "../visibility/visibility";
 import { dispatchPomodoroCompleted } from "../stealth/stealth";
+import { appEvents } from "../../ui/appEvents";
 
 const RING_RADIUS = 46;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
@@ -284,6 +285,10 @@ export const mountPomodoroView = async (
       startedAt: completion.startedAt,
       endedAt: completion.endedAt,
       dayKey: getLocalDayKey(new Date(completion.endedAt))
+    });
+    appEvents.emit("sessionCompleted", {
+      dayKey: getLocalDayKey(new Date(completion.endedAt)),
+      type: completion.mode
     });
     await updateStats();
     notify("Session complete", {
