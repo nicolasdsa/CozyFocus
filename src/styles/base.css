@@ -353,7 +353,7 @@ button {
   letter-spacing: -0.03em;
 }
 
-.timer-display span:last-child {
+.timer-display > span:last-child {
   font-size: 12px;
   letter-spacing: 0.25em;
   color: rgba(148, 163, 184, 0.7);
@@ -536,6 +536,25 @@ button {
   height: 10px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
+}
+
+.dot.dot-overflow {
+  min-width: 18px;
+  width: auto;
+  padding: 0 6px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.dot.is-hidden {
+  display: none;
 }
 
 .dot.is-active {

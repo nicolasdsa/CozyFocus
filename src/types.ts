@@ -1,5 +1,12 @@
 export type SessionType = "focus" | "shortBreak" | "longBreak";
 
+export type PomodoroDefaultsSetting = {
+  focus: number;
+  shortBreak: number;
+  longBreak: number;
+  updatedAt: number;
+};
+
 export interface NoteEntry {
   id: string;
   content: string;

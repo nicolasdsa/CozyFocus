@@ -8,6 +8,7 @@ import type { PomodoroService } from "../src/features/pomodoro/pomodoroService";
 import { openCozyDB } from "../src/storage";
 import { getLocalDayKey } from "../src/storage/dayKey";
 import type { DayStatsRecord, SessionRecord } from "../src/storage/db";
+import { POMODORO_DURATIONS_MS } from "../src/features/pomodoro/pomodoroEngine";
 
 const flushPromises = async () => {
   await Promise.resolve();
@@ -116,6 +117,13 @@ describe("pomodoro", () => {
 
     const service: PomodoroService = {
       getStats: async () => emptyStats,
+      getDefaults: async () => ({
+        focus: POMODORO_DURATIONS_MS.focus,
+        shortBreak: POMODORO_DURATIONS_MS.shortBreak,
+        longBreak: POMODORO_DURATIONS_MS.longBreak,
+        updatedAt: Date.now()
+      }),
+      saveDefaults: async (defaults) => defaults,
       recordSession: vi.fn().mockResolvedValue({ session, stats: emptyStats }),
       close: async () => {}
     };

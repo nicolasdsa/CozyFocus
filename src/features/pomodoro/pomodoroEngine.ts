@@ -43,7 +43,7 @@ interface PomodoroEngineOptions {
 }
 
 export class PomodoroEngine {
-  private readonly durations: Record<SessionType, number>;
+  private durations: Record<SessionType, number>;
   private readonly now: () => number;
   private listeners: ListenersMap = {
     tick: new Set(),
@@ -101,6 +101,18 @@ export class PomodoroEngine {
     }
     this.mode = mode;
     this.reset();
+  }
+
+  setDuration(mode: SessionType, durationMs: number): void {
+    if (!Number.isFinite(durationMs) || durationMs <= 0) {
+      return;
+    }
+    this.durations[mode] = durationMs;
+    if (this.mode === mode && this.status !== "running") {
+      this.remainingMs = durationMs;
+      this.emitState();
+      this.emitTick();
+    }
   }
 
   start(): void {
@@ -219,7 +231,7 @@ export class PomodoroEngine {
 
     this.stopTimers();
     this.status = "idle";
-    this.remainingMs = 0;
+    this.remainingMs = durationMs;
     this.startedAt = null;
     this.targetEndAt = null;
     this.emitTick();

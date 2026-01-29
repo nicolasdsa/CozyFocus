@@ -40,6 +40,53 @@ export const notify = (title: string, options?: NotificationOptions): boolean =>
   return true;
 };
 
+export const playSoundNTimes = async (
+  audioEl: HTMLAudioElement,
+  times: number,
+  gapMs: number = 200
+): Promise<void> => {
+  const count = Math.max(0, Math.floor(times));
+  if (count === 0) {
+    return;
+  }
+
+  const waitForEnded = () =>
+    new Promise<void>((resolve) => {
+      const onEnded = () => {
+        audioEl.removeEventListener("ended", onEnded);
+        resolve();
+      };
+      audioEl.addEventListener("ended", onEnded);
+      try {
+        const result = audioEl.play();
+        if (result && typeof result.catch === "function") {
+          void result.catch(() => {
+            // Ignore autoplay errors.
+          });
+        }
+      } catch {
+        // Ignore unsupported playback environments (e.g. jsdom).
+      }
+    });
+
+  const sleep = (ms: number) =>
+    new Promise<void>((resolve) => {
+      if (ms <= 0) {
+        resolve();
+        return;
+      }
+      window.setTimeout(resolve, ms);
+    });
+
+  for (let index = 0; index < count; index += 1) {
+    audioEl.currentTime = 0;
+    await waitForEnded();
+    if (index < count - 1) {
+      await sleep(gapMs);
+    }
+  }
+};
+
 export const playCompletionSound = (): void => {
   if (typeof Audio === "undefined") {
     return;
@@ -49,15 +96,5 @@ export const playCompletionSound = (): void => {
     chimeAudio.preload = "auto";
     chimeAudio.volume = 0.4;
   }
-  chimeAudio.currentTime = 0;
-  try {
-    const result = chimeAudio.play();
-    if (result && typeof result.catch === "function") {
-      void result.catch(() => {
-        // Ignore autoplay errors.
-      });
-    }
-  } catch {
-    // Ignore unsupported playback environments (e.g. jsdom).
-  }
+  void playSoundNTimes(chimeAudio, 5);
 };

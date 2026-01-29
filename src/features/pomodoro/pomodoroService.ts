@@ -2,7 +2,9 @@ import { addCompletedSession, getStatsByDay, openCozyDB } from "../../storage";
 import { getLocalDayKey } from "../../storage/dayKey";
 import { createEmptyStats } from "../../storage/statsRepo";
 import type { DayStatsRecord, SessionRecord } from "../../storage/db";
-import type { SessionType } from "../../types";
+import type { PomodoroDefaultsSetting, SessionType } from "../../types";
+import { getSetting, saveSetting } from "../../storage/settingsRepo";
+import { POMODORO_DURATIONS_MS } from "./pomodoroEngine";
 
 interface CompletedSessionInput {
   type: SessionType;
@@ -14,6 +16,8 @@ interface CompletedSessionInput {
 
 export interface PomodoroService {
   getStats: (dayKey?: string) => Promise<DayStatsRecord>;
+  getDefaults: () => Promise<PomodoroDefaultsSetting>;
+  saveDefaults: (defaults: PomodoroDefaultsSetting) => Promise<PomodoroDefaultsSetting>;
   recordSession: (
     input: CompletedSessionInput
   ) => Promise<{ session: SessionRecord; stats: DayStatsRecord }>;
@@ -22,6 +26,7 @@ export interface PomodoroService {
 
 export const createPomodoroService = (options?: { dbName?: string }): PomodoroService => {
   const dbPromise = openCozyDB(options?.dbName);
+  const defaultsKey = "pomodoroDefaults";
 
   const resolveDayKey = (input?: string, endedAt?: number) => {
     if (input) {
@@ -53,6 +58,32 @@ export const createPomodoroService = (options?: { dbName?: string }): PomodoroSe
     });
   };
 
+  const getDefaults = async (): Promise<PomodoroDefaultsSetting> => {
+    const db = await dbPromise;
+    const stored = await getSetting<PomodoroDefaultsSetting>(db, defaultsKey);
+    if (stored) {
+      return stored;
+    }
+    return {
+      focus: POMODORO_DURATIONS_MS.focus,
+      shortBreak: POMODORO_DURATIONS_MS.shortBreak,
+      longBreak: POMODORO_DURATIONS_MS.longBreak,
+      updatedAt: Date.now()
+    };
+  };
+
+  const saveDefaults = async (
+    defaults: PomodoroDefaultsSetting
+  ): Promise<PomodoroDefaultsSetting> => {
+    const db = await dbPromise;
+    const payload: PomodoroDefaultsSetting = {
+      ...defaults,
+      updatedAt: defaults.updatedAt ?? Date.now()
+    };
+    await saveSetting(db, defaultsKey, payload);
+    return payload;
+  };
+
   const close = async (): Promise<void> => {
     const db = await dbPromise;
     db.close();
@@ -60,6 +91,8 @@ export const createPomodoroService = (options?: { dbName?: string }): PomodoroSe
 
   return {
     getStats,
+    getDefaults,
+    saveDefaults,
     recordSession,
     close
   };
