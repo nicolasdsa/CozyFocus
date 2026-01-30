@@ -1,3 +1,5 @@
+import { mountMarkdownEditor } from "./editor/editorView";
+
 export const mountFilesView = (root: HTMLElement): void => {
   root.innerHTML = `
     <section class="files-view" data-testid="files-view">
@@ -68,36 +70,14 @@ export const mountFilesView = (root: HTMLElement): void => {
           <span class="files-pill">Work</span>
           <span class="files-pill is-muted">Focus</span>
         </div>
-        <div class="files-toolbar">
-          <button class="files-icon-btn" type="button">Bold</button>
-          <button class="files-icon-btn" type="button">List</button>
-          <button class="files-icon-btn" type="button">Quote</button>
-          <span class="files-toolbar-divider"></span>
-          <button class="files-icon-btn" type="button">Preview</button>
-        </div>
-        <div class="files-editor">
-          <div class="files-editor-pane">
-            <h3>Draft</h3>
-            <p>
-              Stretch to reset. Capture the next small wins. Stay soft on the plan and hard on the focus.
-            </p>
-            <ul>
-              <li>Warm tea + 10-minute settle</li>
-              <li>Two high-leverage tasks, one nice-to-have</li>
-              <li>Break before meeting at 10:30</li>
-            </ul>
-          </div>
-          <div class="files-editor-pane is-preview">
-            <h3>Preview</h3>
-            <p>
-              The day starts with a calm sprint. The timer holds the boundaries, the notes hold the intent.
-            </p>
-            <blockquote>
-              "Stay gentle with the plan; stay fierce with the practice."
-            </blockquote>
-          </div>
-        </div>
+        <div class="files-editor-shell" data-testid="files-editor-shell"></div>
       </main>
     </section>
   `;
+
+  const editorRoot = root.querySelector<HTMLElement>("[data-testid=\"files-editor-shell\"]");
+  if (!editorRoot) {
+    throw new Error("Missing files editor root");
+  }
+  mountMarkdownEditor(editorRoot);
 };

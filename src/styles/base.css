@@ -1,4 +1,5 @@
 @import "./tokens.css";
+@import "./vendor/github-markdown.css";
 @import "./components/card.css";
 @import "./components/tasks.css";
 @import "./components/notes.css";

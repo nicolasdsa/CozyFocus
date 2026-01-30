@@ -249,6 +249,19 @@
   overflow: hidden;
 }
 
+.files-editor-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+.files-markdown-editor {
+  flex: 1;
+  min-height: 0;
+}
+
 .files-editor-pane {
   border-radius: 20px;
   border: 1px solid rgba(148, 163, 184, 0.2);
@@ -256,6 +269,9 @@
   padding: 20px 24px;
   color: rgba(226, 232, 240, 0.9);
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .files-editor-pane h3 {
@@ -280,6 +296,30 @@
 
 .files-editor-pane.is-preview {
   background: rgba(15, 23, 42, 0.55);
+}
+
+.files-md-input {
+  width: 100%;
+  flex: 1;
+  min-height: 220px;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: rgba(226, 232, 240, 0.95);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.files-md-preview {
+  flex: 1;
+  min-height: 220px;
+  overflow-y: auto;
+}
+
+.files-markdown-toolbar {
+  flex-wrap: wrap;
 }
 
 @media (max-width: 900px) {
