@@ -2,6 +2,8 @@ export * from "./db";
 export * from "./dayKey";
 export * from "./tasksRepo";
 export * from "./notesRepo";
+export * from "./docsRepo";
+export * from "./tagsRepo";
 export * from "./sessionsRepo";
 export * from "./statsRepo";
 export * from "./settingsRepo";

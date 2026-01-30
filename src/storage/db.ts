@@ -18,6 +18,21 @@ export interface NoteRecord {
   updatedAt: number;
 }
 
+export interface DocRecord {
+  id: string;
+  dayKey: string;
+  title: string;
+  markdown: string;
+  tags: string[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface TagRecord {
+  name: string;
+  createdAt: number;
+}
+
 export interface SessionRecord {
   id: string;
   dayKey: string;
@@ -48,6 +63,15 @@ interface CozyFocusDB extends DBSchema {
     value: NoteRecord;
     indexes: { dayKey: string };
   };
+  docs: {
+    key: string;
+    value: DocRecord;
+    indexes: { dayKey: string };
+  };
+  tagLibrary: {
+    key: string;
+    value: TagRecord;
+  };
   sessions: {
     key: string;
     value: SessionRecord;
@@ -66,7 +90,7 @@ interface CozyFocusDB extends DBSchema {
 export type CozyFocusDatabase = IDBPDatabase<CozyFocusDB>;
 
 const DB_NAME = "cozyfocus";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export const openCozyDB = (name: string = DB_NAME): Promise<CozyFocusDatabase> => {
   return openDB<CozyFocusDB>(name, DB_VERSION, {
@@ -79,6 +103,15 @@ export const openCozyDB = (name: string = DB_NAME): Promise<CozyFocusDatabase> =
       if (!db.objectStoreNames.contains("notes")) {
         const store = db.createObjectStore("notes", { keyPath: "id" });
         store.createIndex("dayKey", "dayKey");
+      }
+
+      if (!db.objectStoreNames.contains("docs")) {
+        const store = db.createObjectStore("docs", { keyPath: "id" });
+        store.createIndex("dayKey", "dayKey");
+      }
+
+      if (!db.objectStoreNames.contains("tagLibrary")) {
+        db.createObjectStore("tagLibrary", { keyPath: "name" });
       }
 
       if (!db.objectStoreNames.contains("sessions")) {

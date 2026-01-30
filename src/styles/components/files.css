@@ -176,6 +176,34 @@
   margin: 4px 0 0;
 }
 
+.files-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.files-doc-title-input {
+  font-size: 30px;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  color: var(--color-text-title);
+  outline: none;
+  padding: 0;
+  min-width: 240px;
+}
+
+.files-doc-title-input::placeholder {
+  color: rgba(148, 163, 184, 0.6);
+}
+
+.files-title-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+
 .files-actions {
   display: flex;
   align-items: center;
@@ -223,6 +251,140 @@
 .files-pill.is-muted {
   background: rgba(148, 163, 184, 0.2);
   color: rgba(226, 232, 240, 0.8);
+}
+
+.files-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.files-tag-picker {
+  position: absolute;
+  top: 38px;
+  left: 0;
+  min-width: 200px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.95);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 5;
+}
+
+.files-tag-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(148, 163, 184, 0.9);
+}
+
+.files-tag-picker-close {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(30, 41, 59, 0.6);
+  color: rgba(226, 232, 240, 0.9);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.files-tag-picker-close:hover {
+  border-color: rgba(148, 163, 184, 0.6);
+  background: rgba(51, 65, 85, 0.8);
+}
+
+.files-tag-picker-add {
+  border: none;
+  background: transparent;
+  color: rgba(191, 219, 254, 0.9);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.files-tag-picker-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.files-tag-chip {
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(30, 41, 59, 0.6);
+  color: rgba(226, 232, 240, 0.9);
+  padding: 4px 10px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.files-tag-chip.is-active {
+  border-color: rgba(56, 189, 248, 0.9);
+  background: rgba(2, 132, 199, 0.65);
+  color: #f0f9ff;
+}
+
+.files-tag-picker .files-tag-chip.is-active {
+  background: rgba(2, 132, 199, 0.75);
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.7);
+}
+
+.files-tag-chip-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.files-tag-chip-delete {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(30, 41, 59, 0.6);
+  color: rgba(226, 232, 240, 0.9);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.files-tag-chip-delete:hover {
+  border-color: rgba(248, 113, 113, 0.7);
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.files-tag-input {
+  min-width: 90px;
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  background: rgba(30, 41, 59, 0.45);
+  color: rgba(226, 232, 240, 0.9);
+  outline: none;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.files-tag-input::placeholder {
+  color: rgba(148, 163, 184, 0.6);
+}
+
+.files-tag-input:focus {
+  border-color: rgba(14, 165, 233, 0.7);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+}
+
+.files-tag-empty {
+  font-size: 12px;
+  color: rgba(148, 163, 184, 0.7);
 }
 
 .files-toolbar {

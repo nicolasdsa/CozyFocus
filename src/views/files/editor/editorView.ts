@@ -4,10 +4,21 @@ import { qs } from "../../../ui/dom";
 
 const defaultContent = `# Morning Warmup\n\nStretch to reset. Capture the next small wins. Stay soft on the plan and hard on the focus.\n\n- Warm tea + 10-minute settle\n- Two high-leverage tasks, one nice-to-have\n- Break before meeting at 10:30\n\n> "Stay gentle with the plan; stay fierce with the practice."\n`;
 
+interface MarkdownEditorOptions {
+  initialValue?: string;
+  onInput?: (value: string) => void;
+}
+
+export interface MarkdownEditorHandle {
+  setValue: (value: string) => void;
+  focus: () => void;
+  getValue: () => string;
+}
+
 export const mountMarkdownEditor = (
   root: HTMLElement,
-  initialValue: string = defaultContent
-): void => {
+  options: MarkdownEditorOptions = {}
+): MarkdownEditorHandle => {
   root.innerHTML = `
     <div class="files-toolbar files-markdown-toolbar" data-testid="md-toolbar">
       <button class="files-icon-btn" type="button" data-testid="md-bold" aria-label="Bold">Bold</button>
@@ -43,7 +54,7 @@ export const mountMarkdownEditor = (
   const textarea = qs<HTMLTextAreaElement>(root, "md-input");
   const preview = qs<HTMLDivElement>(root, "md-preview");
 
-  textarea.value = initialValue;
+  textarea.value = options.initialValue ?? defaultContent;
 
   const updatePreview = () => {
     preview.innerHTML = renderMarkdown(textarea.value);
@@ -91,6 +102,21 @@ export const mountMarkdownEditor = (
     applyAction(() => insertBlock(textarea, linkText));
   });
 
-  textarea.addEventListener("input", updatePreview);
+  textarea.addEventListener("input", () => {
+    updatePreview();
+    options.onInput?.(textarea.value);
+  });
   updatePreview();
+
+  return {
+    setValue: (value: string) => {
+      textarea.value = value;
+      updatePreview();
+    },
+    focus: () => {
+      textarea.focus();
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    },
+    getValue: () => textarea.value
+  };
 };
