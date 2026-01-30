@@ -4,7 +4,62 @@ import { mountPlayerView } from "../features/player/playerView";
 import { mountStealth } from "../features/stealth/stealth";
 import { mountStreakView } from "../features/streak/streakView";
 import { mountTasksView } from "../features/tasks/tasksView";
+import { navigateTo, subscribeRoute, type AppRoute } from "../router/router";
 import { qs } from "./dom";
+import { mountFilesView } from "../views/files/filesView";
+
+type CleanupTask = () => Promise<void> | void;
+
+const renderFocusView = async (root: HTMLElement): Promise<CleanupTask[]> => {
+  root.innerHTML = `
+    <header class="header">
+      <div class="header-title">
+        <h1>CozyFocus</h1>
+        <span class="header-subtitle">Deep Work Nook</span>
+      </div>
+      <div class="header-status">
+        <div class="streak-pill" data-testid="streak-badge"></div>
+        <button class="stealth-btn" data-testid="stealth-toggle">Stealth</button>
+        <div class="avatar" aria-label="User avatar"></div>
+      </div>
+    </header>
+
+    <main class="content">
+      <aside class="card side-column" data-testid="task-queue"></aside>
+
+      <section class="center-stack" data-testid="pomodoro"></section>
+
+      <aside class="card side-column" data-testid="quick-notes"></aside>
+    </main>
+
+    <footer class="footer player" data-testid="player"></footer>
+  `;
+
+  const cleanups: CleanupTask[] = [];
+
+  if ("indexedDB" in globalThis) {
+    const taskQueue = qs<HTMLElement>(root, "task-queue");
+    const notesPanel = qs<HTMLElement>(root, "quick-notes");
+    const pomodoro = qs<HTMLElement>(root, "pomodoro");
+    const player = qs<HTMLElement>(root, "player");
+    const streakBadge = qs<HTMLElement>(root, "streak-badge");
+    const taskHandle = await mountTasksView(taskQueue);
+    const notesHandle = await mountNotesView(notesPanel);
+    const pomodoroHandle = await mountPomodoroView(pomodoro);
+    await mountPlayerView(player);
+    const streakHandle = await mountStreakView(streakBadge);
+    cleanups.push(() => taskHandle.destroy());
+    cleanups.push(() => notesHandle.destroy());
+    cleanups.push(() => pomodoroHandle.destroy());
+    cleanups.push(() => streakHandle.destroy());
+  }
+
+  const stealthToggle = qs<HTMLButtonElement>(root, "stealth-toggle");
+  const stealthHandle = mountStealth(stealthToggle);
+  cleanups.push(() => stealthHandle.destroy());
+
+  return cleanups;
+};
 
 export const renderApp = (root: HTMLElement): void => {
   root.innerHTML = `
@@ -12,8 +67,11 @@ export const renderApp = (root: HTMLElement): void => {
       <nav class="navbar" data-testid="nav">
         <div class="nav-logo">CF</div>
         <div class="nav-list">
-          <button class="nav-btn is-active" aria-label="Focus">
+          <button class="nav-btn is-active" aria-label="Focus" data-route="focus">
             <span>F</span>
+          </button>
+          <button class="nav-btn" aria-label="Files (Archive)" data-route="files" data-testid="nav-files">
+            <span>A</span>
           </button>
           <button class="nav-btn" aria-label="Notes">
             <span>N</span>
@@ -27,45 +85,44 @@ export const renderApp = (root: HTMLElement): void => {
         </button>
       </nav>
 
-      <section class="main-column">
-        <header class="header">
-          <div class="header-title">
-            <h1>CozyFocus</h1>
-            <span class="header-subtitle">Deep Work Nook</span>
-          </div>
-          <div class="header-status">
-            <div class="streak-pill" data-testid="streak-badge"></div>
-            <button class="stealth-btn" data-testid="stealth-toggle">Stealth</button>
-            <div class="avatar" aria-label="User avatar"></div>
-          </div>
-        </header>
-
-        <main class="content">
-          <aside class="card side-column" data-testid="task-queue"></aside>
-
-          <section class="center-stack" data-testid="pomodoro"></section>
-
-          <aside class="card side-column" data-testid="quick-notes"></aside>
-        </main>
-
-        <footer class="footer player" data-testid="player"></footer>
-      </section>
+      <section class="main-column" data-testid="view-root"></section>
     </div>
   `;
 
-  if ("indexedDB" in globalThis) {
-    const taskQueue = qs<HTMLElement>(root, "task-queue");
-    const notesPanel = qs<HTMLElement>(root, "quick-notes");
-    const pomodoro = qs<HTMLElement>(root, "pomodoro");
-    const player = qs<HTMLElement>(root, "player");
-    const streakBadge = qs<HTMLElement>(root, "streak-badge");
-    void mountTasksView(taskQueue);
-    void mountNotesView(notesPanel);
-    void mountPomodoroView(pomodoro);
-    void mountPlayerView(player);
-    void mountStreakView(streakBadge);
-  }
+  const viewRoot = qs<HTMLElement>(root, "view-root");
+  const navFiles = qs<HTMLButtonElement>(root, "nav-files");
+  let activeCleanups: CleanupTask[] = [];
 
-  const stealthToggle = qs<HTMLButtonElement>(root, "stealth-toggle");
-  mountStealth(stealthToggle);
+  const setActiveNav = (route: AppRoute) => {
+    const navButtons = root.querySelectorAll<HTMLButtonElement>("[data-route]");
+    navButtons.forEach((button) => {
+      if (button.dataset.route === route) {
+        button.classList.add("is-active");
+      } else {
+        button.classList.remove("is-active");
+      }
+    });
+  };
+
+  const renderRoute = (route: AppRoute) => {
+    setActiveNav(route);
+    const tasks = activeCleanups;
+    activeCleanups = [];
+    void Promise.all(tasks.map(async (cleanup) => cleanup()));
+
+    if (route === "files") {
+      mountFilesView(viewRoot);
+      return;
+    }
+
+    void renderFocusView(viewRoot).then((cleanups) => {
+      activeCleanups = cleanups;
+    });
+  };
+
+  navFiles.addEventListener("click", () => {
+    navigateTo("files");
+  });
+
+  subscribeRoute(renderRoute);
 };

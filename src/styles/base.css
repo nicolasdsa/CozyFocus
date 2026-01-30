@@ -2,6 +2,7 @@
 @import "./components/card.css";
 @import "./components/tasks.css";
 @import "./components/notes.css";
+@import "./components/files.css";
 
 @font-face {
   font-family: "Inter";
