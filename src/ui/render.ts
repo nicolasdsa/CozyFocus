@@ -7,6 +7,7 @@ import { mountTasksView } from "../features/tasks/tasksView";
 import { navigateTo, subscribeRoute, type AppRoute } from "../router/router";
 import { qs } from "./dom";
 import { mountFilesView } from "../views/files/filesView";
+import { mountCalendarView } from "../views/calendar/calendarView";
 
 type CleanupTask = () => Promise<void> | void;
 
@@ -70,6 +71,9 @@ export const renderApp = (root: HTMLElement): void => {
           <button class="nav-btn is-active" aria-label="Focus" data-route="focus">
             <span>F</span>
           </button>
+          <button class="nav-btn" aria-label="Calendar" data-route="calendar" data-testid="nav-calendar">
+            <span>C</span>
+          </button>
           <button class="nav-btn" aria-label="Files (Archive)" data-route="files" data-testid="nav-files">
             <span>A</span>
           </button>
@@ -91,6 +95,7 @@ export const renderApp = (root: HTMLElement): void => {
 
   const viewRoot = qs<HTMLElement>(root, "view-root");
   const navFiles = qs<HTMLButtonElement>(root, "nav-files");
+  const navCalendar = qs<HTMLButtonElement>(root, "nav-calendar");
   let activeCleanups: CleanupTask[] = [];
 
   const setActiveNav = (route: AppRoute) => {
@@ -114,6 +119,10 @@ export const renderApp = (root: HTMLElement): void => {
       mountFilesView(viewRoot);
       return;
     }
+    if (route === "calendar") {
+      mountCalendarView(viewRoot);
+      return;
+    }
 
     void renderFocusView(viewRoot).then((cleanups) => {
       activeCleanups = cleanups;
@@ -122,6 +131,9 @@ export const renderApp = (root: HTMLElement): void => {
 
   navFiles.addEventListener("click", () => {
     navigateTo("files");
+  });
+  navCalendar.addEventListener("click", () => {
+    navigateTo("calendar");
   });
 
   subscribeRoute(renderRoute);

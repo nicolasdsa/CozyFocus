@@ -4,6 +4,7 @@
 @import "./components/tasks.css";
 @import "./components/notes.css";
 @import "./components/files.css";
+@import "./components/calendar.css";
 
 @font-face {
   font-family: "Inter";
