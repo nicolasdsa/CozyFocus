@@ -1,4 +1,4 @@
-import type { DaySummary } from "./calendarGrid";
+import type { DaySummary } from "../../features/calendar/calendarService";
 
 const formatDrawerDate = (date: Date): string =>
   date.toLocaleDateString([], {
@@ -28,11 +28,11 @@ export const renderCalendarDrawer = (root: HTMLElement, date: Date, summary: Day
       </div>
       <div class="calendar-drawer__stat">
         <span>Tasks</span>
-        <strong>${formatLabel(summary.tasks, "")}</strong>
+        <strong>${formatLabel(summary.tasksCount, "")}</strong>
       </div>
       <div class="calendar-drawer__stat">
         <span>Files</span>
-        <strong>${formatLabel(summary.files, "")}</strong>
+        <strong>${formatLabel(summary.filesCount, "")}</strong>
       </div>
     </div>
     <div class="calendar-drawer__section">

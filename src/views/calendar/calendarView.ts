@@ -1,5 +1,6 @@
 import { qs } from "../../ui/dom";
-import { renderCalendarGrid, type DaySummary } from "./calendarGrid";
+import { getMonthSummary, type DaySummary } from "../../features/calendar/calendarService";
+import { formatDateKey, renderCalendarGrid } from "./calendarGrid";
 import { renderCalendarDrawer } from "./calendarDrawer";
 
 const formatMonthTitle = (date: Date): string =>
@@ -8,13 +9,12 @@ const formatMonthTitle = (date: Date): string =>
 const isSameMonth = (a: Date, b: Date): boolean =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 
-const buildSummary = (date: Date): DaySummary => {
-  const day = date.getDate();
-  const focusMinutes = day % 5 === 0 ? 120 : day % 3 === 0 ? 45 : 0;
-  const tasks = day % 4 === 0 ? 3 : day % 6 === 0 ? 1 : 0;
-  const files = day % 7 === 0 ? 2 : 0;
-  return { focusMinutes, tasks, files };
-};
+const buildEmptySummary = (dayKey: string): DaySummary => ({
+  dayKey,
+  focusMinutes: 0,
+  tasksCount: 0,
+  filesCount: 0
+});
 
 export const mountCalendarView = (root: HTMLElement): void => {
   root.innerHTML = `
@@ -57,8 +57,25 @@ export const mountCalendarView = (root: HTMLElement): void => {
   let selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   let currentMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
 
-  const updateView = () => {
+  let renderToken = 0;
+  let summaryMap = new Map<string, DaySummary>();
+
+  const getSummary = (date: Date): DaySummary => {
+    const dayKey = formatDateKey(date);
+    return summaryMap.get(dayKey) ?? buildEmptySummary(dayKey);
+  };
+
+  const updateView = async () => {
+    const token = (renderToken += 1);
     monthTitle.textContent = formatMonthTitle(currentMonth);
+    const nextSummary = await getMonthSummary(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth()
+    );
+    if (token !== renderToken) {
+      return;
+    }
+    summaryMap = nextSummary;
     renderCalendarGrid(gridRoot, {
       month: currentMonth,
       selectedDate,
@@ -67,11 +84,11 @@ export const mountCalendarView = (root: HTMLElement): void => {
         if (!isSameMonth(currentMonth, date)) {
           currentMonth = new Date(date.getFullYear(), date.getMonth(), 1);
         }
-        updateView();
+        void updateView();
       },
-      getSummary: buildSummary
+      getSummary
     });
-    renderCalendarDrawer(drawerRoot, selectedDate, buildSummary(selectedDate));
+    renderCalendarDrawer(drawerRoot, selectedDate, getSummary(selectedDate));
   };
 
   prevButton.addEventListener("click", () => {
@@ -79,7 +96,7 @@ export const mountCalendarView = (root: HTMLElement): void => {
     if (!isSameMonth(currentMonth, selectedDate)) {
       selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
     }
-    updateView();
+    void updateView();
   });
 
   nextButton.addEventListener("click", () => {
@@ -87,14 +104,14 @@ export const mountCalendarView = (root: HTMLElement): void => {
     if (!isSameMonth(currentMonth, selectedDate)) {
       selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
     }
-    updateView();
+    void updateView();
   });
 
   todayButton.addEventListener("click", () => {
     selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     currentMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-    updateView();
+    void updateView();
   });
 
-  updateView();
+  void updateView();
 };

@@ -1,8 +1,4 @@
-export interface DaySummary {
-  focusMinutes: number;
-  tasks: number;
-  files: number;
-}
+import type { DaySummary } from "../../features/calendar/calendarService";
 
 export interface CalendarGridOptions {
   month: Date;
@@ -25,10 +21,15 @@ const isSameDay = (a: Date, b: Date): boolean =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
-const buildBadge = (label: string): HTMLSpanElement => {
+const buildBadge = (
+  label: string,
+  className: string,
+  testId: string
+): HTMLSpanElement => {
   const badge = document.createElement("span");
-  badge.className = "calendar-badge";
+  badge.className = `calendar-badge ${className}`;
   badge.textContent = label;
+  badge.dataset.testid = testId;
   return badge;
 };
 
@@ -43,7 +44,8 @@ const buildDayCell = (
   const button = document.createElement("button");
   button.type = "button";
   button.className = "calendar-day";
-  button.dataset.testid = `day-${toDateKey(date)}`;
+  const dayKey = toDateKey(date);
+  button.dataset.testid = `day-${dayKey}`;
   button.setAttribute("aria-label", date.toDateString());
 
   if (date.getMonth() !== month.getMonth()) {
@@ -64,13 +66,31 @@ const buildDayCell = (
   badges.className = "calendar-day__badges";
 
   if (summary.focusMinutes > 0) {
-    badges.appendChild(buildBadge(`${summary.focusMinutes}m`));
+    badges.appendChild(
+      buildBadge(
+        `${summary.focusMinutes}m`,
+        "calendar-badge--focus",
+        `badge-focus-${dayKey}`
+      )
+    );
   }
-  if (summary.tasks > 0) {
-    badges.appendChild(buildBadge(`${summary.tasks}`));
+  if (summary.tasksCount > 0) {
+    badges.appendChild(
+      buildBadge(
+        `${summary.tasksCount}`,
+        "calendar-badge--tasks",
+        `badge-tasks-${dayKey}`
+      )
+    );
   }
-  if (summary.files > 0) {
-    badges.appendChild(buildBadge(`${summary.files}`));
+  if (summary.filesCount > 0) {
+    badges.appendChild(
+      buildBadge(
+        `${summary.filesCount}`,
+        "calendar-badge--files",
+        `badge-files-${dayKey}`
+      )
+    );
   }
 
   button.append(number, badges);

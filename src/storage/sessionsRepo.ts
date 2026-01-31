@@ -49,6 +49,15 @@ export const getSessionsByDay = async (
   return db.getAllFromIndex("sessions", "dayKey", dayKey);
 };
 
+export const getSessionsByDayAndType = async (
+  db: CozyFocusDatabase,
+  dayKey: string,
+  type: SessionType
+): Promise<SessionRecord[]> => {
+  const sessions = await getSessionsByDay(db, dayKey);
+  return sessions.filter((session) => session.type === type);
+};
+
 export const hasAnySessionForDay = async (
   db: CozyFocusDatabase,
   dayKey: string
