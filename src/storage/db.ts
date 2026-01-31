@@ -90,24 +90,41 @@ interface CozyFocusDB extends DBSchema {
 export type CozyFocusDatabase = IDBPDatabase<CozyFocusDB>;
 
 const DB_NAME = "cozyfocus";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 export const openCozyDB = (name: string = DB_NAME): Promise<CozyFocusDatabase> => {
   return openDB<CozyFocusDB>(name, DB_VERSION, {
-    upgrade(db) {
+    upgrade(db, _oldVersion, _newVersion, transaction) {
+      const ensureIndex = (
+        storeName: keyof CozyFocusDB,
+        indexName: string,
+        keyPath: string
+      ): void => {
+        const store = transaction.objectStore(storeName);
+        if (!store.indexNames.contains(indexName)) {
+          store.createIndex(indexName, keyPath);
+        }
+      };
+
       if (!db.objectStoreNames.contains("tasks")) {
         const store = db.createObjectStore("tasks", { keyPath: "id" });
         store.createIndex("dayKey", "dayKey");
+      } else {
+        ensureIndex("tasks", "dayKey", "dayKey");
       }
 
       if (!db.objectStoreNames.contains("notes")) {
         const store = db.createObjectStore("notes", { keyPath: "id" });
         store.createIndex("dayKey", "dayKey");
+      } else {
+        ensureIndex("notes", "dayKey", "dayKey");
       }
 
       if (!db.objectStoreNames.contains("docs")) {
         const store = db.createObjectStore("docs", { keyPath: "id" });
         store.createIndex("dayKey", "dayKey");
+      } else {
+        ensureIndex("docs", "dayKey", "dayKey");
       }
 
       if (!db.objectStoreNames.contains("tagLibrary")) {
@@ -118,6 +135,9 @@ export const openCozyDB = (name: string = DB_NAME): Promise<CozyFocusDatabase> =
         const store = db.createObjectStore("sessions", { keyPath: "id" });
         store.createIndex("dayKey", "dayKey");
         store.createIndex("type", "type");
+      } else {
+        ensureIndex("sessions", "dayKey", "dayKey");
+        ensureIndex("sessions", "type", "type");
       }
 
       if (!db.objectStoreNames.contains("stats")) {
