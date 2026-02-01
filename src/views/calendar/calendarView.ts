@@ -1,5 +1,9 @@
 import { qs } from "../../ui/dom";
-import { getMonthSummary, type DaySummary } from "../../features/calendar/calendarService";
+import {
+  getDayTimeline,
+  getMonthSummary,
+  type DaySummary
+} from "../../features/calendar/calendarService";
 import { formatDateKey, renderCalendarGrid } from "./calendarGrid";
 import { renderCalendarDrawer } from "./calendarDrawer";
 
@@ -68,10 +72,11 @@ export const mountCalendarView = (root: HTMLElement): void => {
   const updateView = async () => {
     const token = (renderToken += 1);
     monthTitle.textContent = formatMonthTitle(currentMonth);
-    const nextSummary = await getMonthSummary(
-      currentMonth.getFullYear(),
-      currentMonth.getMonth()
-    );
+    const selectedKey = formatDateKey(selectedDate);
+    const [nextSummary, timeline] = await Promise.all([
+      getMonthSummary(currentMonth.getFullYear(), currentMonth.getMonth()),
+      getDayTimeline(selectedKey)
+    ]);
     if (token !== renderToken) {
       return;
     }
@@ -88,7 +93,7 @@ export const mountCalendarView = (root: HTMLElement): void => {
       },
       getSummary
     });
-    renderCalendarDrawer(drawerRoot, selectedDate, getSummary(selectedDate));
+    renderCalendarDrawer(drawerRoot, selectedDate, getSummary(selectedDate), timeline);
   };
 
   prevButton.addEventListener("click", () => {

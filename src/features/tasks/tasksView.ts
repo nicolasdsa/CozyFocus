@@ -148,7 +148,8 @@ export const mountTasksView = async (
       title,
       completed: false,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
+      completedAt: null
     };
     tasks = [...tasks, tempTask];
     renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
@@ -169,7 +170,8 @@ export const mountTasksView = async (
     const merged: TaskRecord = {
       ...persisted,
       title: current?.title ?? persisted.title,
-      completed: current?.completed ?? persisted.completed
+      completed: current?.completed ?? persisted.completed,
+      completedAt: current?.completedAt ?? persisted.completedAt ?? null
     };
     tasks = tasks.map((task) => (task.id === tempTask.id ? merged : task));
     if (currentFocusId === tempTask.id) {
@@ -474,7 +476,8 @@ export const mountTasksView = async (
         const updated: TaskRecord = {
           ...tasks[taskIndex],
           completed: target.checked,
-          updatedAt: Date.now()
+          updatedAt: Date.now(),
+          completedAt: target.checked ? Date.now() : null
         };
         if (!wasCompleted && target.checked) {
           triggerWave(taskId);

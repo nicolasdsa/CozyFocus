@@ -47,7 +47,8 @@ export const createTasksService = (options?: { dbName?: string }): TasksService 
       title,
       completed: false,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
+      completedAt: null
     };
 
     await db.put("tasks", task);
@@ -65,10 +66,13 @@ export const createTasksService = (options?: { dbName?: string }): TasksService 
       return null;
     }
 
+    const completedAt =
+      completed ? (base.completed ? base.completedAt ?? Date.now() : Date.now()) : null;
     const updated: TaskRecord = {
       ...base,
       completed,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      completedAt
     };
 
     await db.put("tasks", updated);

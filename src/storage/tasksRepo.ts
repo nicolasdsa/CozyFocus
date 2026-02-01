@@ -18,7 +18,8 @@ export const createTask = async (
     title: input.title,
     completed: input.completed ?? false,
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
+    completedAt: input.completed ? now : null
   };
 
   await db.put("tasks", task);

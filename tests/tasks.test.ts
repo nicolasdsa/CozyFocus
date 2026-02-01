@@ -100,7 +100,8 @@ describe("tasks", () => {
       title: "Prep focus playlist",
       completed: false,
       createdAt: Date.now(),
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      completedAt: null
     });
     db.close();
 

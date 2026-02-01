@@ -9,6 +9,7 @@ export interface TaskRecord {
   completed: boolean;
   createdAt: number;
   updatedAt: number;
+  completedAt: number | null;
 }
 
 export interface NoteRecord {

@@ -8,6 +8,16 @@ export type DaySummary = {
   filesCount: number;
 };
 
+export type TimelineItem = {
+  id: string;
+  type: "focus" | "task" | "file";
+  title: string;
+  description?: string;
+  time: number;
+  timeLabel: string;
+  tags?: string[];
+};
+
 const buildEmptySummary = (dayKey: string): DaySummary => ({
   dayKey,
   focusMinutes: 0,
@@ -69,4 +79,84 @@ export const getMonthSummary = async (
 
   db.close();
   return summaryMap;
+};
+
+const formatTimeLabel = (timestamp: number): string =>
+  new Date(timestamp).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+
+export const getDayTimeline = async (dayKey: string): Promise<TimelineItem[]> => {
+  const db = await openCozyDB();
+  const [sessions, tasks, docs] = await Promise.all([
+    db.getAllFromIndex("sessions", "dayKey", dayKey),
+    db.getAllFromIndex("tasks", "dayKey", dayKey),
+    db.getAllFromIndex("docs", "dayKey", dayKey)
+  ]);
+
+  const items: TimelineItem[] = [];
+
+  sessions.forEach((session) => {
+    if (session.type !== "focus" || !session.completed) {
+      return;
+    }
+    const minutes = Math.round(session.durationMs / 60000);
+    items.push({
+      id: session.id,
+      type: "focus",
+      title: "Focus Session",
+      description: `${minutes} minutes.`,
+      time: session.endedAt,
+      timeLabel: formatTimeLabel(session.endedAt)
+    });
+  });
+
+  tasks.forEach((task) => {
+    items.push({
+      id: `${task.id}-created`,
+      type: "task",
+      title: `Task Created: ${task.title}`,
+      time: task.createdAt,
+      timeLabel: formatTimeLabel(task.createdAt)
+    });
+
+    if (!task.completed) {
+      return;
+    }
+    const completedAt = task.completedAt ?? task.updatedAt;
+    items.push({
+      id: task.id,
+      type: "task",
+      title: `Task Completed: ${task.title}`,
+      time: completedAt,
+      timeLabel: formatTimeLabel(completedAt)
+    });
+  });
+
+  docs.forEach((doc) => {
+    items.push({
+      id: doc.id,
+      type: "file",
+      title: `New File: ${doc.title}`,
+      time: doc.createdAt,
+      timeLabel: formatTimeLabel(doc.createdAt),
+      tags: doc.tags ?? []
+    });
+  });
+
+  items.sort((a, b) => {
+    if (a.time !== b.time) {
+      return b.time - a.time;
+    }
+    const titleCompare = a.title.localeCompare(b.title);
+    if (titleCompare !== 0) {
+      return titleCompare;
+    }
+    return a.id.localeCompare(b.id);
+  });
+
+  db.close();
+  return items;
 };

@@ -25,4 +25,5 @@ export interface TaskEntry {
   completed: boolean;
   createdAt: number;
   updatedAt: number;
+  completedAt: number | null;
 }
