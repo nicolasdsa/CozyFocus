@@ -56,7 +56,7 @@ describe("calendar navigation", () => {
       `[data-testid="day-${formatKey(today)}"]`
     ) as HTMLElement | null;
     expect(dayCell).toBeTruthy();
-    expect(dayCell?.classList.contains("day--selected")).toBe(true);
+    expect(dayCell?.classList.contains("cal-cell--selected")).toBe(true);
     const drawer = document.querySelector('[data-testid="calendar-drawer"]') as HTMLElement | null;
     expect(drawer).toBeTruthy();
     expect(drawer?.hasAttribute("hidden")).toBe(false);

@@ -22,24 +22,25 @@ const formatLabel = (value: number, suffix: string): string => {
 const buildMetricCard = (
   label: string,
   value: string,
-  testId: string
+  testId: string,
+  toneClass: string
 ): HTMLDivElement => {
-  const card = create<HTMLDivElement>("div", "calendar-drawer__stat");
+  const card = create<HTMLDivElement>("div", `metric-card ${toneClass}`);
   card.dataset.testid = testId;
-  const title = create<HTMLSpanElement>("span");
+  const title = create<HTMLSpanElement>("span", "metric-card__label");
   title.textContent = label;
-  const number = create<HTMLElement>("strong");
+  const number = create<HTMLElement>("strong", "metric-card__value");
   number.textContent = value;
   card.append(title, number);
   return card;
 };
 
 const buildTimelineItem = (item: TimelineItem, index: number): HTMLLIElement => {
-  const entry = create<HTMLLIElement>("li", "calendar-timeline__item");
+  const entry = create<HTMLLIElement>("li", "calendar-timeline__item timeline-item");
   entry.classList.add(`timeline--${item.type}`);
   entry.dataset.testid = `timeline-item-${index}`;
 
-  const dot = create<HTMLSpanElement>("span", "calendar-timeline__dot");
+  const dot = create<HTMLSpanElement>("span", "calendar-timeline__dot timeline-dot");
   dot.classList.add(`dot--${item.type}`);
 
   const content = create<HTMLDivElement>("div", "calendar-timeline__content");
@@ -80,7 +81,7 @@ export const renderCalendarDrawer = (
 ): void => {
   root.innerHTML = "";
 
-  const header = create<HTMLDivElement>("div", "calendar-drawer__header");
+  const header = create<HTMLDivElement>("div", "calendar-drawer__header drawer-header");
   const overline = create<HTMLParagraphElement>("p", "calendar-drawer__overline");
   overline.textContent = "Selected day";
   const title = create<HTMLHeadingElement>("h3", "calendar-drawer__title");
@@ -91,22 +92,25 @@ export const renderCalendarDrawer = (
   weekday.dataset.testid = "drawer-weekday";
   header.append(overline, title, weekday);
 
-  const stats = create<HTMLDivElement>("div", "calendar-drawer__stats");
+  const stats = create<HTMLDivElement>("div", "calendar-drawer__stats metric-grid");
   stats.append(
     buildMetricCard(
       "Focused minutes",
       formatLabel(summary.focusMinutes, "m"),
-      "drawer-metric-focus"
+      "drawer-metric-focus",
+      "metric-card--focus"
     ),
     buildMetricCard(
       "Tasks",
       formatLabel(summary.tasksCount, ""),
-      "drawer-metric-tasks"
+      "drawer-metric-tasks",
+      "metric-card--tasks"
     ),
     buildMetricCard(
       "Files",
       formatLabel(summary.filesCount, ""),
-      "drawer-metric-files"
+      "drawer-metric-files",
+      "metric-card--files"
     )
   );
 
@@ -115,7 +119,7 @@ export const renderCalendarDrawer = (
   sectionTitle.textContent = "Activity Timeline";
   section.appendChild(sectionTitle);
 
-  const list = create<HTMLOListElement>("ol", "calendar-timeline");
+  const list = create<HTMLOListElement>("ol", "calendar-timeline timeline-list");
   list.dataset.testid = "drawer-timeline";
 
   if (timeline.length === 0) {

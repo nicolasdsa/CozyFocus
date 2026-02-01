@@ -23,21 +23,21 @@ const buildEmptySummary = (dayKey: string): DaySummary => ({
 export const mountCalendarView = (root: HTMLElement): void => {
   root.innerHTML = `
     <section class="calendar-view" data-testid="calendar-view">
-      <header class="calendar-header">
+      <header class="calendar-header cal-header">
         <div>
           <p class="calendar-overline">Monthly overview</p>
-          <h2 class="calendar-title" data-testid="calendar-month-title"></h2>
+          <h2 class="calendar-title cal-month-title" data-testid="calendar-month-title"></h2>
         </div>
         <div class="calendar-header__actions">
           <div class="calendar-nav">
-            <button class="calendar-nav-btn" type="button" data-testid="calendar-prev" aria-label="Previous month">
-              Prev
+            <button class="calendar-nav-btn cal-nav-btn" type="button" data-testid="calendar-prev" aria-label="Previous month">
+              &larr;
             </button>
-            <button class="calendar-nav-btn" type="button" data-testid="calendar-next" aria-label="Next month">
-              Next
+            <button class="calendar-nav-btn cal-nav-btn" type="button" data-testid="calendar-next" aria-label="Next month">
+              &rarr;
             </button>
           </div>
-          <button class="calendar-today-btn" type="button" data-testid="calendar-today">Today</button>
+          <button class="calendar-today-btn cal-today-btn" type="button" data-testid="calendar-today">Today</button>
         </div>
       </header>
 
@@ -45,7 +45,7 @@ export const mountCalendarView = (root: HTMLElement): void => {
         <section class="calendar-main card">
           <div class="calendar-grid" data-testid="calendar-grid"></div>
         </section>
-        <aside class="calendar-drawer card" data-testid="calendar-drawer"></aside>
+        <aside class="calendar-drawer drawer drawer--open card" data-testid="calendar-drawer"></aside>
       </div>
     </section>
   `;
@@ -63,24 +63,39 @@ export const mountCalendarView = (root: HTMLElement): void => {
 
   let renderToken = 0;
   let summaryMap = new Map<string, DaySummary>();
+  let prevSummaryMap = new Map<string, DaySummary>();
+  let nextSummaryMap = new Map<string, DaySummary>();
 
   const getSummary = (date: Date): DaySummary => {
     const dayKey = formatDateKey(date);
-    return summaryMap.get(dayKey) ?? buildEmptySummary(dayKey);
+    if (isSameMonth(date, currentMonth)) {
+      return summaryMap.get(dayKey) ?? buildEmptySummary(dayKey);
+    }
+    const prevMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+    if (isSameMonth(date, prevMonth)) {
+      return prevSummaryMap.get(dayKey) ?? buildEmptySummary(dayKey);
+    }
+    return nextSummaryMap.get(dayKey) ?? buildEmptySummary(dayKey);
   };
 
   const updateView = async () => {
     const token = (renderToken += 1);
     monthTitle.textContent = formatMonthTitle(currentMonth);
     const selectedKey = formatDateKey(selectedDate);
-    const [nextSummary, timeline] = await Promise.all([
+    const prevMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+    const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+    const [nextSummary, prevSummary, nextMonthSummary, timeline] = await Promise.all([
       getMonthSummary(currentMonth.getFullYear(), currentMonth.getMonth()),
+      getMonthSummary(prevMonth.getFullYear(), prevMonth.getMonth()),
+      getMonthSummary(nextMonth.getFullYear(), nextMonth.getMonth()),
       getDayTimeline(selectedKey)
     ]);
     if (token !== renderToken) {
       return;
     }
     summaryMap = nextSummary;
+    prevSummaryMap = prevSummary;
+    nextSummaryMap = nextMonthSummary;
     renderCalendarGrid(gridRoot, {
       month: currentMonth,
       selectedDate,

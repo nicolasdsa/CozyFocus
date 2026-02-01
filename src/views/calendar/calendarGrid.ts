@@ -27,9 +27,14 @@ const buildBadge = (
   testId: string
 ): HTMLSpanElement => {
   const badge = document.createElement("span");
-  badge.className = `calendar-badge ${className}`;
-  badge.textContent = label;
+  badge.className = `cal-badge calendar-badge ${className}`;
   badge.dataset.testid = testId;
+  const dot = document.createElement("span");
+  dot.className = "cal-badge__dot";
+  const text = document.createElement("span");
+  text.className = "cal-badge__text";
+  text.textContent = label;
+  badge.append(dot, text);
   return badge;
 };
 
@@ -43,33 +48,36 @@ const buildDayCell = (
 ): HTMLButtonElement => {
   const button = document.createElement("button");
   button.type = "button";
-  button.className = "calendar-day";
+  button.className = "cal-cell calendar-day";
   const dayKey = toDateKey(date);
   button.dataset.testid = `day-${dayKey}`;
   button.setAttribute("aria-label", date.toDateString());
 
   if (date.getMonth() !== month.getMonth()) {
-    button.classList.add("day--outside");
+    button.classList.add("cal-cell--outside", "day--outside");
   }
   if (isSameDay(date, today)) {
-    button.classList.add("day--today");
+    button.classList.add("day--today", "cal-cell--today");
   }
   if (isSameDay(date, selectedDate)) {
-    button.classList.add("day--selected");
+    button.classList.add("cal-cell--selected");
   }
 
-  const number = document.createElement("div");
-  number.className = "calendar-day__number";
+  const number = document.createElement("span");
+  number.className = "cal-cell__daynum calendar-day__number";
+  if (isSameDay(date, selectedDate)) {
+    number.classList.add("cal-cell__daynum--selected");
+  }
   number.textContent = `${date.getDate()}`;
 
   const badges = document.createElement("div");
-  badges.className = "calendar-day__badges";
+  badges.className = "cal-cell__badges calendar-day__badges";
 
   if (summary.focusMinutes > 0) {
     badges.appendChild(
       buildBadge(
         `${summary.focusMinutes}m`,
-        "calendar-badge--focus",
+        "cal-badge--focus calendar-badge--focus",
         `badge-focus-${dayKey}`
       )
     );
@@ -78,7 +86,7 @@ const buildDayCell = (
     badges.appendChild(
       buildBadge(
         `${summary.tasksCount}`,
-        "calendar-badge--tasks",
+        "cal-badge--tasks calendar-badge--tasks",
         `badge-tasks-${dayKey}`
       )
     );
@@ -87,7 +95,7 @@ const buildDayCell = (
     badges.appendChild(
       buildBadge(
         `${summary.filesCount}`,
-        "calendar-badge--files",
+        "cal-badge--files calendar-badge--files",
         `badge-files-${dayKey}`
       )
     );
@@ -103,6 +111,7 @@ const buildDayCell = (
 
 export const renderCalendarGrid = (root: HTMLElement, options: CalendarGridOptions): void => {
   root.innerHTML = "";
+  root.className = "calendar-grid cal-grid-panel";
   const month = options.month;
   const firstOfMonth = new Date(month.getFullYear(), month.getMonth(), 1);
   const startOffset = firstOfMonth.getDay();
