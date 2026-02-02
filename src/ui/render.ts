@@ -78,12 +78,6 @@ export const renderApp = (root: HTMLElement): void => {
           <button class="nav-btn" aria-label="Files (Archive)" data-route="files" data-testid="nav-files">
             <span>A</span>
           </button>
-          <button class="nav-btn" aria-label="Notes">
-            <span>N</span>
-          </button>
-          <button class="nav-btn" aria-label="Summary">
-            <span>S</span>
-          </button>
         </div>
         <button class="nav-btn" aria-label="Settings" data-route="settings" data-testid="nav-settings">
           <span>O</span>

@@ -1,5 +1,7 @@
 import { exportData } from "../../features/settings/exportData";
 import { downloadBlob } from "../../features/settings/download";
+import { clearAllStores } from "../../features/settings/deleteData";
+import { createConfirmDeleteView } from "../../features/settings/confirmDeleteView";
 import {
   applyMergePlan,
   buildMergePlan,
@@ -43,7 +45,7 @@ export const mountSettingsView = (root: HTMLElement): void => {
             </div>
             <a
               class="settings-link"
-              href="https://github.com"
+              href="https://github.com/nicolasdsa/CozyFocus"
               target="_blank"
               rel="noreferrer"
               aria-label="Open CozyFocus repository on GitHub"
@@ -81,35 +83,57 @@ export const mountSettingsView = (root: HTMLElement): void => {
               Delete Data
             </button>
           </div>
-          <div class="settings-import-panel" data-testid="import-panel" hidden>
-            <div class="settings-import-row">
-              <label class="settings-import-label" for="import-textarea">Paste JSON</label>
-              <textarea
-                id="import-textarea"
-                class="settings-import-textarea"
-                data-testid="import-textarea"
-                placeholder="Paste a CozyFocus export bundle..."
-                rows="8"
-              ></textarea>
-            </div>
-            <div class="settings-import-row">
-              <label class="settings-import-label" for="import-file">Or choose a .json file</label>
-              <input
-                id="import-file"
-                class="settings-import-file"
-                type="file"
-                accept="application/json,.json"
-              />
-            </div>
-            <div class="settings-import-actions">
-              <button class="settings-btn settings-btn--primary" type="button" data-testid="import-confirm">
-                Confirm Import
-              </button>
-            </div>
-            <div class="settings-import-preview" data-testid="import-preview"></div>
-            <div class="settings-import-status" data-testid="import-status"></div>
-          </div>
+          <div class="settings-import-status" data-testid="import-status"></div>
+          <div class="settings-delete-status" data-testid="delete-status"></div>
         </section>
+
+        <div class="settings-modal" data-testid="import-modal" hidden>
+          <div class="settings-modal-backdrop" data-testid="import-backdrop"></div>
+          <div class="settings-modal-dialog" role="dialog" aria-modal="true" aria-label="Import data">
+            <button class="settings-modal-close" type="button" aria-label="Close import" data-testid="import-close">
+              ×
+            </button>
+            <div class="settings-modal-title">Import Data</div>
+            <div class="settings-import-panel" data-testid="import-panel">
+              <div class="settings-import-row">
+                <label class="settings-import-label" for="import-textarea">Paste JSON</label>
+                <textarea
+                  id="import-textarea"
+                  class="settings-import-textarea"
+                  data-testid="import-textarea"
+                  placeholder="Paste a CozyFocus export bundle..."
+                  rows="8"
+                ></textarea>
+              </div>
+              <div class="settings-import-row">
+                <label class="settings-import-label" for="import-file">Or choose a .json file</label>
+                <input
+                  id="import-file"
+                  class="settings-import-file"
+                  type="file"
+                  accept="application/json,.json"
+                />
+              </div>
+              <div class="settings-import-actions">
+                <button class="settings-btn settings-btn--primary" type="button" data-testid="import-confirm">
+                  Confirm Import
+                </button>
+              </div>
+              <div class="settings-import-preview" data-testid="import-preview"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-modal" data-testid="delete-modal" hidden>
+          <div class="settings-modal-backdrop" data-testid="delete-backdrop"></div>
+          <div class="settings-modal-dialog" role="dialog" aria-modal="true" aria-label="Delete data">
+            <button class="settings-modal-close" type="button" aria-label="Close delete" data-testid="delete-close">
+              ×
+            </button>
+            <div class="settings-modal-title">Delete Data</div>
+            <div class="settings-delete-panel" data-testid="delete-panel"></div>
+          </div>
+        </div>
 
         <section class="settings-support card">
           <div>
@@ -141,12 +165,20 @@ export const mountSettingsView = (root: HTMLElement): void => {
   }
 
   const importButton = root.querySelector<HTMLButtonElement>("[data-testid=\"data-import\"]");
-  const importPanel = root.querySelector<HTMLDivElement>("[data-testid=\"import-panel\"]");
   const importTextarea = root.querySelector<HTMLTextAreaElement>("[data-testid=\"import-textarea\"]");
   const importPreview = root.querySelector<HTMLDivElement>("[data-testid=\"import-preview\"]");
   const importStatus = root.querySelector<HTMLDivElement>("[data-testid=\"import-status\"]");
   const importConfirm = root.querySelector<HTMLButtonElement>("[data-testid=\"import-confirm\"]");
   const importFile = root.querySelector<HTMLInputElement>("#import-file");
+  const importModal = root.querySelector<HTMLDivElement>("[data-testid=\"import-modal\"]");
+  const importBackdrop = root.querySelector<HTMLDivElement>("[data-testid=\"import-backdrop\"]");
+  const importClose = root.querySelector<HTMLButtonElement>("[data-testid=\"import-close\"]");
+  const deleteButton = root.querySelector<HTMLButtonElement>("[data-testid=\"data-delete\"]");
+  const deletePanel = root.querySelector<HTMLDivElement>("[data-testid=\"delete-panel\"]");
+  const deleteStatus = root.querySelector<HTMLDivElement>("[data-testid=\"delete-status\"]");
+  const deleteModal = root.querySelector<HTMLDivElement>("[data-testid=\"delete-modal\"]");
+  const deleteBackdrop = root.querySelector<HTMLDivElement>("[data-testid=\"delete-backdrop\"]");
+  const deleteClose = root.querySelector<HTMLButtonElement>("[data-testid=\"delete-close\"]");
 
   const renderPlan = (plan: MergePlan): string => {
     const rows = [
@@ -191,6 +223,68 @@ export const mountSettingsView = (root: HTMLElement): void => {
     importStatus.dataset.tone = tone;
   };
 
+  const resetImportPreview = (): void => {
+    if (!importPreview) {
+      return;
+    }
+    importPreview.innerHTML = `
+      <div class="settings-import-preview-placeholder">
+        Cole um export do CozyFocus para ver o preview.
+      </div>
+    `;
+  };
+
+  const setDeleteStatus = (message: string, tone: "error" | "info" = "info"): void => {
+    if (!deleteStatus) {
+      return;
+    }
+    deleteStatus.textContent = message;
+    deleteStatus.dataset.tone = tone;
+  };
+
+  const openImportModal = (): void => {
+    if (!importModal) {
+      return;
+    }
+    importModal.hidden = false;
+    importTextarea?.focus();
+  };
+
+  const closeImportModal = (): void => {
+    if (importModal) {
+      importModal.hidden = true;
+    }
+  };
+
+  const openDeleteModal = (): void => {
+    if (!deleteModal) {
+      return;
+    }
+    deleteModal.hidden = false;
+  };
+
+  const closeDeleteModal = (): void => {
+    if (deleteModal) {
+      deleteModal.hidden = true;
+    }
+  };
+
+  const resetSettingsState = (): void => {
+    closeImportModal();
+    closeDeleteModal();
+    if (importTextarea) {
+      importTextarea.value = "";
+    }
+    if (importFile) {
+      importFile.value = "";
+    }
+    resetImportPreview();
+    if (importStatus) {
+      importStatus.textContent = "";
+      delete importStatus.dataset.tone;
+    }
+  };
+
   const loadBundleFromInput = (): ExportBundle | null => {
     if (!importTextarea) {
       return null;
@@ -230,12 +324,65 @@ export const mountSettingsView = (root: HTMLElement): void => {
     })();
   };
 
-  if (importButton && importPanel) {
+  if (importButton) {
     importButton.addEventListener("click", () => {
-      importPanel.hidden = !importPanel.hidden;
-      if (!importPanel.hidden) {
-        importTextarea?.focus();
-      }
+      openImportModal();
+    });
+  }
+
+  importClose?.addEventListener("click", () => {
+    closeImportModal();
+  });
+
+  importBackdrop?.addEventListener("click", () => {
+    closeImportModal();
+  });
+
+  deleteClose?.addEventListener("click", () => {
+    closeDeleteModal();
+  });
+
+  deleteBackdrop?.addEventListener("click", () => {
+    closeDeleteModal();
+  });
+
+  let deleteConfirmHandle:
+    | ReturnType<typeof createConfirmDeleteView>
+    | null = null;
+
+  const showDeletePanel = () => {
+    if (!deletePanel) {
+      return;
+    }
+    openDeleteModal();
+    if (!deleteConfirmHandle) {
+      const onCancel = () => {
+        closeDeleteModal();
+      };
+      const onConfirm = () => {
+        deleteConfirmHandle?.setBusy(true);
+        setDeleteStatus("Deleting local data...", "info");
+        void (async () => {
+          try {
+            await clearAllStores();
+            resetSettingsState();
+            setDeleteStatus("All local data has been deleted.", "info");
+          } catch (error) {
+            console.error("Failed to delete local data", error);
+            setDeleteStatus("Delete failed. Please try again.", "error");
+          } finally {
+            deleteConfirmHandle?.setBusy(false);
+          }
+        })();
+      };
+      deleteConfirmHandle = createConfirmDeleteView({ onCancel, onConfirm });
+      deletePanel.appendChild(deleteConfirmHandle.element);
+    }
+  };
+
+  if (deleteButton) {
+    deleteButton.addEventListener("click", () => {
+      showDeletePanel();
     });
   }
 
@@ -309,6 +456,10 @@ export const mountSettingsView = (root: HTMLElement): void => {
             `Import complete. Added ${totalAdded}, updated ${totalUpdated}, skipped ${totalSkipped}.`,
             "info"
           );
+          if (importFile) {
+            importFile.value = "";
+          }
+          closeImportModal();
         } catch (error) {
           console.error("Failed to import data", error);
           setStatus("Import failed. Please check the bundle and try again.", "error");
@@ -318,10 +469,6 @@ export const mountSettingsView = (root: HTMLElement): void => {
   }
 
   if (importPreview) {
-    importPreview.innerHTML = `
-      <div class="settings-import-preview-placeholder">
-        Cole um export do CozyFocus para ver o preview.
-      </div>
-    `;
+    resetImportPreview();
   }
 };
