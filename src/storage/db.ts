@@ -91,7 +91,7 @@ interface CozyFocusDB extends DBSchema {
 export type CozyFocusDatabase = IDBPDatabase<CozyFocusDB>;
 
 const DB_NAME = "cozyfocus";
-const DB_VERSION = 4;
+export const DB_VERSION = 4;
 
 export const openCozyDB = (name: string = DB_NAME): Promise<CozyFocusDatabase> => {
   return openDB<CozyFocusDB>(name, DB_VERSION, {

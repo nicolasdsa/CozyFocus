@@ -1,3 +1,10 @@
+import { exportData } from "../../features/settings/exportData";
+import { downloadBlob } from "../../features/settings/download";
+
+const formatExportDate = (value: number): string => {
+  return new Date(value).toISOString().slice(0, 10);
+};
+
 export const mountSettingsView = (root: HTMLElement): void => {
   root.innerHTML = `
     <section class="settings-view" data-testid="settings-view">
@@ -79,4 +86,22 @@ export const mountSettingsView = (root: HTMLElement): void => {
       </div>
     </section>
   `;
+
+  const exportButton = root.querySelector<HTMLButtonElement>("[data-testid=\"data-export\"]");
+  if (exportButton) {
+    exportButton.addEventListener("click", () => {
+      void (async () => {
+        try {
+          const bundle = await exportData();
+          const filename = `cozyfocus-export-${formatExportDate(bundle.exportedAt)}.json`;
+          const blob = new Blob([JSON.stringify(bundle, null, 2)], {
+            type: "application/json"
+          });
+          downloadBlob(filename, blob);
+        } catch (error) {
+          console.error("Failed to export data", error);
+        }
+      })();
+    });
+  }
 };
