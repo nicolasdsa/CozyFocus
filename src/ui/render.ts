@@ -8,6 +8,7 @@ import { navigateTo, subscribeRoute, type AppRoute } from "../router/router";
 import { qs } from "./dom";
 import { mountFilesView } from "../views/files/filesView";
 import { mountCalendarView } from "../views/calendar/calendarView";
+import { mountSettingsView } from "../views/settings/settingsView";
 
 type CleanupTask = () => Promise<void> | void;
 
@@ -84,7 +85,7 @@ export const renderApp = (root: HTMLElement): void => {
             <span>S</span>
           </button>
         </div>
-        <button class="nav-btn" aria-label="Settings">
+        <button class="nav-btn" aria-label="Settings" data-route="settings" data-testid="nav-settings">
           <span>O</span>
         </button>
       </nav>
@@ -96,6 +97,7 @@ export const renderApp = (root: HTMLElement): void => {
   const viewRoot = qs<HTMLElement>(root, "view-root");
   const navFiles = qs<HTMLButtonElement>(root, "nav-files");
   const navCalendar = qs<HTMLButtonElement>(root, "nav-calendar");
+  const navSettings = qs<HTMLButtonElement>(root, "nav-settings");
   let activeCleanups: CleanupTask[] = [];
 
   const setActiveNav = (route: AppRoute) => {
@@ -123,6 +125,10 @@ export const renderApp = (root: HTMLElement): void => {
       mountCalendarView(viewRoot);
       return;
     }
+    if (route === "settings") {
+      mountSettingsView(viewRoot);
+      return;
+    }
 
     void renderFocusView(viewRoot).then((cleanups) => {
       activeCleanups = cleanups;
@@ -134,6 +140,9 @@ export const renderApp = (root: HTMLElement): void => {
   });
   navCalendar.addEventListener("click", () => {
     navigateTo("calendar");
+  });
+  navSettings.addEventListener("click", () => {
+    navigateTo("settings");
   });
 
   subscribeRoute(renderRoute);

@@ -1,11 +1,12 @@
-export type AppRoute = "focus" | "files" | "calendar";
+export type AppRoute = "focus" | "files" | "calendar" | "settings";
 
 type RouteHandler = (route: AppRoute) => void;
 
 const ROUTE_HASHES: Record<AppRoute, string> = {
   focus: "#/focus",
   files: "#/files",
-  calendar: "#/calendar"
+  calendar: "#/calendar",
+  settings: "#/settings"
 };
 
 const listeners = new Set<RouteHandler>();
@@ -18,6 +19,9 @@ const parseRoute = (hash: string): AppRoute => {
   }
   if (hash.startsWith(ROUTE_HASHES.calendar)) {
     return "calendar";
+  }
+  if (hash.startsWith(ROUTE_HASHES.settings)) {
+    return "settings";
   }
   if (hash.startsWith(ROUTE_HASHES.focus)) {
     return "focus";
