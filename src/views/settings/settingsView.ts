@@ -1,5 +1,12 @@
 import { exportData } from "../../features/settings/exportData";
 import { downloadBlob } from "../../features/settings/download";
+import {
+  applyMergePlan,
+  buildMergePlan,
+  parseBundle,
+  type MergePlan
+} from "../../features/settings/importData";
+import type { ExportBundle } from "../../features/settings/exportData";
 
 const formatExportDate = (value: number): string => {
   return new Date(value).toISOString().slice(0, 10);
@@ -74,6 +81,34 @@ export const mountSettingsView = (root: HTMLElement): void => {
               Delete Data
             </button>
           </div>
+          <div class="settings-import-panel" data-testid="import-panel" hidden>
+            <div class="settings-import-row">
+              <label class="settings-import-label" for="import-textarea">Paste JSON</label>
+              <textarea
+                id="import-textarea"
+                class="settings-import-textarea"
+                data-testid="import-textarea"
+                placeholder="Paste a CozyFocus export bundle..."
+                rows="8"
+              ></textarea>
+            </div>
+            <div class="settings-import-row">
+              <label class="settings-import-label" for="import-file">Or choose a .json file</label>
+              <input
+                id="import-file"
+                class="settings-import-file"
+                type="file"
+                accept="application/json,.json"
+              />
+            </div>
+            <div class="settings-import-actions">
+              <button class="settings-btn settings-btn--primary" type="button" data-testid="import-confirm">
+                Confirm Import
+              </button>
+            </div>
+            <div class="settings-import-preview" data-testid="import-preview"></div>
+            <div class="settings-import-status" data-testid="import-status"></div>
+          </div>
         </section>
 
         <section class="settings-support card">
@@ -103,5 +138,190 @@ export const mountSettingsView = (root: HTMLElement): void => {
         }
       })();
     });
+  }
+
+  const importButton = root.querySelector<HTMLButtonElement>("[data-testid=\"data-import\"]");
+  const importPanel = root.querySelector<HTMLDivElement>("[data-testid=\"import-panel\"]");
+  const importTextarea = root.querySelector<HTMLTextAreaElement>("[data-testid=\"import-textarea\"]");
+  const importPreview = root.querySelector<HTMLDivElement>("[data-testid=\"import-preview\"]");
+  const importStatus = root.querySelector<HTMLDivElement>("[data-testid=\"import-status\"]");
+  const importConfirm = root.querySelector<HTMLButtonElement>("[data-testid=\"import-confirm\"]");
+  const importFile = root.querySelector<HTMLInputElement>("#import-file");
+
+  const renderPlan = (plan: MergePlan): string => {
+    const rows = [
+      { label: "Tasks", counts: plan.tasks },
+      { label: "Notes", counts: plan.notes },
+      { label: "Docs", counts: plan.docs },
+      { label: "Sessions", counts: plan.sessions },
+      { label: "Stats", counts: plan.stats },
+      { label: "Settings", counts: plan.settings },
+      plan.tags ? { label: "Tags", counts: plan.tags } : null
+    ].filter(Boolean) as Array<{ label: string; counts: MergePlan["tasks"] }>;
+
+    return `
+      <div class="settings-import-preview-header">Preview</div>
+      <div class="settings-import-preview-legend">
+        <span>Adicionar</span>
+        <span>Atualizar</span>
+        <span>Pular</span>
+      </div>
+      ${rows
+        .map(
+          (row) => `
+            <div class="settings-import-preview-row">
+              <span>${row.label}</span>
+              <span class="settings-import-preview-counts">
+                <span class="settings-import-preview-count">+${row.counts.add}</span>
+                <span class="settings-import-preview-count">~${row.counts.update}</span>
+                <span class="settings-import-preview-count">=${row.counts.skip}</span>
+              </span>
+            </div>
+          `
+        )
+        .join("")}
+    `;
+  };
+
+  const setStatus = (message: string, tone: "error" | "info" = "info"): void => {
+    if (!importStatus) {
+      return;
+    }
+    importStatus.textContent = message;
+    importStatus.dataset.tone = tone;
+  };
+
+  const loadBundleFromInput = (): ExportBundle | null => {
+    if (!importTextarea) {
+      return null;
+    }
+    const raw = importTextarea.value.trim();
+    if (!raw) {
+      setStatus("Paste or load a CozyFocus export bundle to continue.", "error");
+      if (importPreview) {
+        importPreview.innerHTML = "";
+      }
+      return null;
+    }
+    try {
+      return parseBundle(raw);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Import failed.", "error");
+      if (importPreview) {
+        importPreview.innerHTML = "";
+      }
+      return null;
+    }
+  };
+
+  const autoPreview = (bundle: ExportBundle | null): void => {
+    if (!bundle || !importPreview) {
+      return;
+    }
+    void (async () => {
+      try {
+        const plan = await buildMergePlan(bundle);
+        importPreview.innerHTML = renderPlan(plan);
+        setStatus("Preview ready. Review the plan before confirming.", "info");
+      } catch (error) {
+        console.error("Failed to build import preview", error);
+        setStatus("Unable to build preview.", "error");
+      }
+    })();
+  };
+
+  if (importButton && importPanel) {
+    importButton.addEventListener("click", () => {
+      importPanel.hidden = !importPanel.hidden;
+      if (!importPanel.hidden) {
+        importTextarea?.focus();
+      }
+    });
+  }
+
+  if (importFile && importTextarea) {
+    importFile.addEventListener("change", () => {
+      const file = importFile.files?.[0];
+      if (!file) {
+        return;
+      }
+      void (async () => {
+        try {
+          const text = await file.text();
+          importTextarea.value = text;
+          setStatus(`Loaded ${file.name}.`, "info");
+          autoPreview(loadBundleFromInput());
+        } catch (error) {
+          console.error("Failed to read import file", error);
+          setStatus("Unable to read that file.", "error");
+        }
+      })();
+    });
+  }
+
+  if (importTextarea) {
+    let previewTimer: number | null = null;
+    importTextarea.addEventListener("input", () => {
+      if (previewTimer) {
+        window.clearTimeout(previewTimer);
+      }
+      previewTimer = window.setTimeout(() => {
+        autoPreview(loadBundleFromInput());
+      }, 400);
+    });
+  }
+
+  if (importConfirm && importPreview) {
+    importConfirm.addEventListener("click", () => {
+      void (async () => {
+        const bundle = loadBundleFromInput();
+        if (!bundle) {
+          return;
+        }
+        try {
+          const { plan } = await applyMergePlan(bundle);
+          importPreview.innerHTML = renderPlan(plan);
+          const totalAdded =
+            plan.tasks.add +
+            plan.notes.add +
+            plan.docs.add +
+            plan.sessions.add +
+            plan.stats.add +
+            plan.settings.add +
+            (plan.tags?.add ?? 0);
+          const totalUpdated =
+            plan.tasks.update +
+            plan.notes.update +
+            plan.docs.update +
+            plan.sessions.update +
+            plan.stats.update +
+            plan.settings.update +
+            (plan.tags?.update ?? 0);
+          const totalSkipped =
+            plan.tasks.skip +
+            plan.notes.skip +
+            plan.docs.skip +
+            plan.sessions.skip +
+            plan.stats.skip +
+            plan.settings.skip +
+            (plan.tags?.skip ?? 0);
+          setStatus(
+            `Import complete. Added ${totalAdded}, updated ${totalUpdated}, skipped ${totalSkipped}.`,
+            "info"
+          );
+        } catch (error) {
+          console.error("Failed to import data", error);
+          setStatus("Import failed. Please check the bundle and try again.", "error");
+        }
+      })();
+    });
+  }
+
+  if (importPreview) {
+    importPreview.innerHTML = `
+      <div class="settings-import-preview-placeholder">
+        Cole um export do CozyFocus para ver o preview.
+      </div>
+    `;
   }
 };

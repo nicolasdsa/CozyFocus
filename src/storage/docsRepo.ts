@@ -60,3 +60,32 @@ export const updateDoc = async (
   await db.put("docs", updated);
   return updated;
 };
+
+export const getById = async (
+  db: CozyFocusDatabase,
+  id: string
+): Promise<DocRecord | undefined> => {
+  return db.get("docs", id);
+};
+
+export const has = async (
+  db: CozyFocusDatabase,
+  id: string
+): Promise<boolean> => {
+  const existing = await db.get("docs", id);
+  return Boolean(existing);
+};
+
+export const bulkPut = async (
+  db: CozyFocusDatabase,
+  records: DocRecord[]
+): Promise<void> => {
+  if (records.length === 0) {
+    return;
+  }
+  const tx = db.transaction("docs", "readwrite");
+  for (const record of records) {
+    await tx.store.put(record);
+  }
+  await tx.done;
+};

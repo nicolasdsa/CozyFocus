@@ -54,4 +54,33 @@ export const recordCompletedSessionStats = async (
   return updated;
 };
 
+export const getById = async (
+  db: CozyFocusDatabase,
+  dayKey: string
+): Promise<DayStatsRecord | undefined> => {
+  return db.get("stats", dayKey);
+};
+
+export const has = async (
+  db: CozyFocusDatabase,
+  dayKey: string
+): Promise<boolean> => {
+  const existing = await db.get("stats", dayKey);
+  return Boolean(existing);
+};
+
+export const bulkPut = async (
+  db: CozyFocusDatabase,
+  records: DayStatsRecord[]
+): Promise<void> => {
+  if (records.length === 0) {
+    return;
+  }
+  const tx = db.transaction("stats", "readwrite");
+  for (const record of records) {
+    await tx.store.put(record);
+  }
+  await tx.done;
+};
+
 export { createEmptyStats, applySessionToStats };

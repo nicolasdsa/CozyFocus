@@ -39,3 +39,32 @@ export const deleteTag = async (
 ): Promise<void> => {
   await db.delete("tagLibrary", name);
 };
+
+export const getById = async (
+  db: CozyFocusDatabase,
+  name: string
+): Promise<TagRecord | undefined> => {
+  return db.get("tagLibrary", name);
+};
+
+export const has = async (
+  db: CozyFocusDatabase,
+  name: string
+): Promise<boolean> => {
+  const existing = await db.get("tagLibrary", name);
+  return Boolean(existing);
+};
+
+export const bulkPut = async (
+  db: CozyFocusDatabase,
+  records: TagRecord[]
+): Promise<void> => {
+  if (records.length === 0) {
+    return;
+  }
+  const tx = db.transaction("tagLibrary", "readwrite");
+  for (const record of records) {
+    await tx.store.put(record);
+  }
+  await tx.done;
+};
