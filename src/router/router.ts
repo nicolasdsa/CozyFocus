@@ -2,31 +2,53 @@ export type AppRoute = "focus" | "files" | "calendar" | "settings";
 
 type RouteHandler = (route: AppRoute) => void;
 
-const ROUTE_HASHES: Record<AppRoute, string> = {
-  focus: "#/focus",
-  files: "#/files",
-  calendar: "#/calendar",
-  settings: "#/settings"
+const ROUTE_PATHS: Record<AppRoute, string> = {
+  focus: "/",
+  files: "/files",
+  calendar: "/calendar",
+  settings: "/settings"
 };
 
 const listeners = new Set<RouteHandler>();
 let currentRoute: AppRoute = "focus";
 let started = false;
 
-const parseRoute = (hash: string): AppRoute => {
-  if (hash.startsWith(ROUTE_HASHES.files)) {
+const normalizePath = (pathname: string): string => {
+  if (!pathname || pathname === "/") {
+    return "/";
+  }
+  return pathname.replace(/\/+$/, "");
+};
+
+const parseRoute = (pathname: string): AppRoute => {
+  const normalized = normalizePath(pathname);
+  if (normalized === ROUTE_PATHS.files) {
     return "files";
   }
-  if (hash.startsWith(ROUTE_HASHES.calendar)) {
+  if (normalized === ROUTE_PATHS.calendar) {
     return "calendar";
   }
-  if (hash.startsWith(ROUTE_HASHES.settings)) {
+  if (normalized === ROUTE_PATHS.settings) {
     return "settings";
   }
-  if (hash.startsWith(ROUTE_HASHES.focus)) {
-    return "focus";
-  }
   return "focus";
+};
+
+const normalizeLocation = (): AppRoute => {
+  const { hash, pathname } = window.location;
+  if (hash.startsWith("#/")) {
+    const legacyPath = `/${hash.slice(2)}`;
+    const route = parseRoute(legacyPath);
+    window.history.replaceState(null, "", ROUTE_PATHS[route]);
+    return route;
+  }
+
+  const route = parseRoute(pathname);
+  const canonical = ROUTE_PATHS[route];
+  if (normalizePath(pathname) !== canonical) {
+    window.history.replaceState(null, "", canonical);
+  }
+  return route;
 };
 
 const notify = (route: AppRoute) => {
@@ -44,9 +66,9 @@ const ensureStarted = () => {
     return;
   }
   started = true;
-  currentRoute = parseRoute(window.location.hash);
-  window.addEventListener("hashchange", () => {
-    notify(parseRoute(window.location.hash));
+  currentRoute = normalizeLocation();
+  window.addEventListener("popstate", () => {
+    notify(parseRoute(window.location.pathname));
   });
 };
 
@@ -61,9 +83,9 @@ export const subscribeRoute = (handler: RouteHandler): (() => void) => {
 
 export const navigateTo = (route: AppRoute): void => {
   ensureStarted();
-  const target = ROUTE_HASHES[route];
-  if (window.location.hash !== target) {
-    window.location.hash = target;
+  const target = ROUTE_PATHS[route];
+  if (normalizePath(window.location.pathname) !== target) {
+    window.history.pushState(null, "", target);
   }
   notify(route);
 };
