@@ -27,7 +27,6 @@ export const mountNotesView = async (
     </div>
     <div class="card-body notes-body">
       <div class="notes-list" data-testid="notes-container"></div>
-      <span class="notes-status">Auto-saved</span>
     </div>
   `;
 

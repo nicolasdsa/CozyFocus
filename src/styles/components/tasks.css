@@ -1,7 +1,6 @@
 .task-item {
   position: relative;
   padding-right: 40px;
-  overflow: hidden;
 }
 
 .task-row {
@@ -135,6 +134,7 @@
   transform: translateY(4px);
   transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease;
   cursor: pointer;
+  z-index: 2;
 }
 
 .task-item:hover .trash-btn {
@@ -151,6 +151,7 @@
   width: 14px;
   height: 14px;
   fill: currentColor;
+  pointer-events: none;
 }
 
 @keyframes task-wave {
@@ -165,4 +166,13 @@
     opacity: 0;
     transform: translateX(20%);
   }
+}
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding-right: 4px;
+  flex: 1;
+  min-height: 0;
+  gap: 10px;
 }

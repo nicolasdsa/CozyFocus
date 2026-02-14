@@ -18,6 +18,7 @@
   transform: translateY(4px);
   transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease;
   cursor: pointer;
+  z-index: 2;
 }
 
 .note-card .trash-btn.note-trash--bl {
@@ -43,4 +44,5 @@
   width: 13px;
   height: 13px;
   fill: currentColor;
+  pointer-events: none;
 }

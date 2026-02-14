@@ -66,6 +66,28 @@ describe("tasks UI polish", () => {
     await deleteDB(dbName);
   });
 
+  it("double click on task list creates a new input row", async () => {
+    const dbName = createDbName("dblclick");
+    const dayKey = getLocalDayKey();
+    const root = createRoot();
+    const view = await mountTasksView(root, { dbName, dayKey });
+
+    const list = root.querySelector<HTMLElement>('[data-testid="tasks-list"]');
+    if (!list) {
+      throw new Error("Missing tasks list");
+    }
+
+    list.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+
+    const input = root.querySelector<HTMLInputElement>(
+      '[data-testid="tasks-input"]'
+    );
+    expect(input).not.toBeNull();
+
+    await view.destroy();
+    await deleteDB(dbName);
+  });
+
   it("checkbox has custom classes for unchecked and checked", async () => {
     const dbName = createDbName("checkbox");
     const dayKey = getLocalDayKey();

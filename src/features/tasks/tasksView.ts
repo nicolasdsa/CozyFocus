@@ -151,6 +151,9 @@ export const mountTasksView = async (
       updatedAt: now,
       completedAt: null
     };
+    if (tasks.length === 0 && !currentFocusId) {
+      currentFocusId = tempTask.id;
+    }
     tasks = [...tasks, tempTask];
     renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
 
@@ -368,6 +371,18 @@ export const mountTasksView = async (
     }
     const title = target.closest<HTMLElement>(".task-title");
     if (!title) {
+      if (target.closest(".task-title-input")) {
+        return;
+      }
+      if (target.closest(".task-checkbox")) {
+        return;
+      }
+      if (target.closest(".trash-btn")) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      showInputRow();
       return;
     }
     const item = title.closest<HTMLElement>("[data-task-id]");
