@@ -17,7 +17,8 @@ const buildEmptySummary = (dayKey: string): DaySummary => ({
   dayKey,
   focusMinutes: 0,
   tasksCount: 0,
-  filesCount: 0
+  filesCount: 0,
+  notesCount: 0
 });
 
 export const mountCalendarView = (root: HTMLElement): void => {

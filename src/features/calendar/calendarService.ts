@@ -6,11 +6,12 @@ export type DaySummary = {
   focusMinutes: number;
   tasksCount: number;
   filesCount: number;
+  notesCount: number;
 };
 
 export type TimelineItem = {
   id: string;
-  type: "focus" | "task" | "file";
+  type: "focus" | "task" | "file" | "note";
   title: string;
   description?: string;
   time: number;
@@ -22,7 +23,8 @@ const buildEmptySummary = (dayKey: string): DaySummary => ({
   dayKey,
   focusMinutes: 0,
   tasksCount: 0,
-  filesCount: 0
+  filesCount: 0,
+  notesCount: 0
 });
 
 const getMonthBounds = (year: number, monthIndex0: number): { start: string; end: string } => {
@@ -42,10 +44,11 @@ export const getMonthSummary = async (
   const { start, end } = getMonthBounds(year, monthIndex0);
   const range = IDBKeyRange.bound(start, end);
 
-  const [sessions, tasks, docs] = await Promise.all([
+  const [sessions, tasks, docs, notes] = await Promise.all([
     db.getAllFromIndex("sessions", "dayKey", range),
     db.getAllFromIndex("tasks", "dayKey", range),
-    db.getAllFromIndex("docs", "dayKey", range)
+    db.getAllFromIndex("docs", "dayKey", range),
+    db.getAllFromIndex("notes", "dayKey", range)
   ]);
 
   const summaryMap = new Map<string, DaySummary>();
@@ -77,6 +80,11 @@ export const getMonthSummary = async (
     summary.filesCount += 1;
   });
 
+  notes.forEach((note) => {
+    const summary = ensure(note.dayKey);
+    summary.notesCount += 1;
+  });
+
   db.close();
   return summaryMap;
 };
@@ -90,10 +98,11 @@ const formatTimeLabel = (timestamp: number): string =>
 
 export const getDayTimeline = async (dayKey: string): Promise<TimelineItem[]> => {
   const db = await openCozyDB();
-  const [sessions, tasks, docs] = await Promise.all([
+  const [sessions, tasks, docs, notes] = await Promise.all([
     db.getAllFromIndex("sessions", "dayKey", dayKey),
     db.getAllFromIndex("tasks", "dayKey", dayKey),
-    db.getAllFromIndex("docs", "dayKey", dayKey)
+    db.getAllFromIndex("docs", "dayKey", dayKey),
+    db.getAllFromIndex("notes", "dayKey", dayKey)
   ]);
 
   const items: TimelineItem[] = [];
@@ -143,6 +152,17 @@ export const getDayTimeline = async (dayKey: string): Promise<TimelineItem[]> =>
       time: doc.createdAt,
       timeLabel: formatTimeLabel(doc.createdAt),
       tags: doc.tags ?? []
+    });
+  });
+
+  notes.forEach((note) => {
+    items.push({
+      id: note.id,
+      type: "note",
+      title: "Quick Note Updated",
+      description: note.content,
+      time: note.updatedAt,
+      timeLabel: formatTimeLabel(note.updatedAt)
     });
   });
 

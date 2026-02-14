@@ -100,6 +100,15 @@ const buildDayCell = (
       )
     );
   }
+  if (summary.notesCount > 0) {
+    badges.appendChild(
+      buildBadge(
+        `${summary.notesCount}`,
+        "cal-badge--notes calendar-badge--notes",
+        `badge-notes-${dayKey}`
+      )
+    );
+  }
 
   button.append(number, badges);
   button.addEventListener("click", () => {

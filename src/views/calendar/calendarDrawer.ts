@@ -111,6 +111,12 @@ export const renderCalendarDrawer = (
       formatLabel(summary.filesCount, ""),
       "drawer-metric-files",
       "metric-card--files"
+    ),
+    buildMetricCard(
+      "Quick notes",
+      formatLabel(summary.notesCount, ""),
+      "drawer-metric-notes",
+      "metric-card--notes"
     )
   );
 

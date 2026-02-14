@@ -13,6 +13,8 @@
   --badge-tasks-fg: rgba(167, 243, 208, 0.95);
   --badge-files-bg: rgba(245, 158, 11, 0.14);
   --badge-files-fg: rgba(253, 230, 138, 0.95);
+  --badge-notes-bg: rgba(244, 114, 182, 0.14);
+  --badge-notes-fg: rgba(251, 207, 232, 0.95);
 }
 
 .calendar-header,
@@ -233,16 +235,18 @@
 
 .calendar-day__badges,
 .cal-cell__badges {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, max-content));
+  align-items: start;
+  justify-items: start;
   gap: 6px;
+  width: 100%;
 }
 
 .calendar-badge,
 .cal-badge {
-  font-size: 13px;
-  height: 22px;
+  font-size: 12px;
+  height: 20px;
   padding: 0 8px;
   border-radius: 999px;
   background: rgba(51, 65, 85, 0.5);
@@ -285,6 +289,13 @@
   background: var(--badge-files-bg);
   color: var(--badge-files-fg);
   border-color: rgba(245, 158, 11, 0.25);
+}
+
+.calendar-badge--notes,
+.cal-badge--notes {
+  background: var(--badge-notes-bg);
+  color: var(--badge-notes-fg);
+  border-color: rgba(244, 114, 182, 0.25);
 }
 
 .calendar-drawer,
@@ -352,13 +363,13 @@
 
 .calendar-drawer__stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -411,6 +422,12 @@
   background: rgba(245, 158, 11, 0.12);
   border-color: rgba(245, 158, 11, 0.25);
   color: rgba(253, 230, 138, 0.9);
+}
+
+.metric-card--notes {
+  background: rgba(244, 114, 182, 0.12);
+  border-color: rgba(244, 114, 182, 0.25);
+  color: rgba(251, 207, 232, 0.9);
 }
 
 .calendar-drawer__section {
@@ -483,6 +500,11 @@
   box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.18);
 }
 
+.calendar-timeline__dot.dot--note {
+  background: rgba(244, 114, 182, 0.9);
+  box-shadow: 0 0 0 4px rgba(244, 114, 182, 0.18);
+}
+
 .calendar-timeline__header {
   display: flex;
   align-items: baseline;
@@ -514,6 +536,9 @@
   border-radius: 10px;
   padding: 6px 8px;
   border: 1px solid rgba(148, 163, 184, 0.12);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .calendar-timeline__tags {

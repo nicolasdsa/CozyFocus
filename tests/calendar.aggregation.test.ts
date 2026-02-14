@@ -2,7 +2,14 @@ import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
 import { describe, expect, it } from "vitest";
 import { mountCalendarView } from "../src/views/calendar/calendarView";
-import { addCompletedSession, addDoc, createTask, getLocalDayKey, openCozyDB } from "../src/storage";
+import {
+  addCompletedSession,
+  addDoc,
+  addNote,
+  createTask,
+  getLocalDayKey,
+  openCozyDB
+} from "../src/storage";
 import { getMonthSummary } from "../src/features/calendar/calendarService";
 
 const DB_NAME = "cozyfocus";
@@ -44,12 +51,13 @@ const seedDay = async (dayKey: string) => {
   await createTask(db, { title: "Task three", dayKey });
 
   await addDoc(db, { title: "Doc one", markdown: "# Doc", dayKey });
+  await addNote(db, { content: "Remember to review this day", dayKey });
 
   db.close();
 };
 
 describe("calendar aggregation", () => {
-  it("aggregates focus minutes, tasks, and files per day", async () => {
+  it("aggregates focus minutes, tasks, files, and quick notes per day", async () => {
     await deleteDB(DB_NAME);
     const today = new Date();
     const dayKey = getLocalDayKey(today);
@@ -63,6 +71,7 @@ describe("calendar aggregation", () => {
     expect(summary?.focusMinutes).toBe(70);
     expect(summary?.tasksCount).toBe(3);
     expect(summary?.filesCount).toBe(1);
+    expect(summary?.notesCount).toBe(1);
 
     await deleteDB(DB_NAME);
   });
@@ -89,14 +98,19 @@ describe("calendar aggregation", () => {
     const filesBadge = document.querySelector<HTMLElement>(
       `[data-testid=\"badge-files-${dayKey}\"]`
     );
+    const notesBadge = document.querySelector<HTMLElement>(
+      `[data-testid=\"badge-notes-${dayKey}\"]`
+    );
 
     expect(focusBadge).toBeTruthy();
     expect(tasksBadge).toBeTruthy();
     expect(filesBadge).toBeTruthy();
+    expect(notesBadge).toBeTruthy();
 
     expect(focusBadge?.textContent).toBe("70m");
     expect(tasksBadge?.textContent).toBe("3");
     expect(filesBadge?.textContent).toBe("1");
+    expect(notesBadge?.textContent).toBe("1");
 
     await deleteDB(DB_NAME);
   });

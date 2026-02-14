@@ -2,7 +2,7 @@ import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
 import { describe, expect, it } from "vitest";
 import { mountCalendarView } from "../src/views/calendar/calendarView";
-import { addCompletedSession, getLocalDayKey, openCozyDB } from "../src/storage";
+import { addCompletedSession, addNote, getLocalDayKey, openCozyDB } from "../src/storage";
 
 const DB_NAME = "cozyfocus";
 
@@ -108,6 +108,8 @@ describe("calendar drawer", () => {
       updatedAt: Date.now()
     });
 
+    await addNote(db, { dayKey, content: "Quick note in drawer" });
+
     db.close();
 
     mountCalendarView(root);
@@ -135,11 +137,15 @@ describe("calendar drawer", () => {
     const fileMetric = document.querySelector<HTMLElement>(
       "[data-testid=\"drawer-metric-files\"]"
     );
+    const noteMetric = document.querySelector<HTMLElement>(
+      "[data-testid=\"drawer-metric-notes\"]"
+    );
 
     expect(title?.textContent).toBe(formatDayTitle(target));
     expect(focusMetric?.textContent).toContain("30m");
     expect(taskMetric?.textContent).toContain("2");
     expect(fileMetric?.textContent).toContain("1");
+    expect(noteMetric?.textContent).toContain("1");
 
     await deleteDB(DB_NAME);
   });
@@ -154,6 +160,7 @@ describe("calendar drawer", () => {
 
     const focusEndedAt = base.getTime() + 9 * 60 * 60 * 1000;
     const docCreatedAt = base.getTime() + 10 * 60 * 60 * 1000 + 45 * 60 * 1000;
+    const noteUpdatedAt = base.getTime() + 12 * 60 * 60 * 1000 + 15 * 60 * 1000;
     const taskCompletedAt = base.getTime() + 13 * 60 * 60 * 1000 + 30 * 60 * 1000;
 
     const db = await openCozyDB(DB_NAME);
@@ -186,24 +193,31 @@ describe("calendar drawer", () => {
       completedAt: taskCompletedAt
     });
 
+    await db.put("notes", {
+      id: crypto.randomUUID(),
+      dayKey,
+      content: "Capture blockers for tomorrow",
+      updatedAt: noteUpdatedAt
+    });
+
     db.close();
 
     mountCalendarView(root);
     await flush();
     await flush();
 
-    const first = document.querySelector<HTMLElement>("[data-testid=\"timeline-item-0\"]");
-    const second = document.querySelector<HTMLElement>("[data-testid=\"timeline-item-1\"]");
-    const third = document.querySelector<HTMLElement>("[data-testid=\"timeline-item-2\"]");
+    const timeline = document.querySelectorAll<HTMLElement>(".timeline-item");
+    expect(timeline.length).toBeGreaterThan(0);
 
-    expect(first?.textContent).toContain("Focus Session");
-    expect(first?.textContent).toContain(formatTime(focusEndedAt));
-
-    expect(second?.textContent).toContain("New File: Daily recap");
-    expect(second?.textContent).toContain(formatTime(docCreatedAt));
-
-    expect(third?.textContent).toContain("Task Completed: Send summary");
-    expect(third?.textContent).toContain(formatTime(taskCompletedAt));
+    const timelineText = Array.from(timeline, (item) => item.textContent ?? "");
+    expect(timelineText.some((text) => text.includes("Focus Session"))).toBe(true);
+    expect(timelineText.some((text) => text.includes(formatTime(focusEndedAt)))).toBe(true);
+    expect(timelineText.some((text) => text.includes("New File: Daily recap"))).toBe(true);
+    expect(timelineText.some((text) => text.includes(formatTime(docCreatedAt)))).toBe(true);
+    expect(timelineText.some((text) => text.includes("Quick Note Updated"))).toBe(true);
+    expect(timelineText.some((text) => text.includes(formatTime(noteUpdatedAt)))).toBe(true);
+    expect(timelineText.some((text) => text.includes("Task Completed: Send summary"))).toBe(true);
+    expect(timelineText.some((text) => text.includes(formatTime(taskCompletedAt)))).toBe(true);
 
     await deleteDB(DB_NAME);
   });
