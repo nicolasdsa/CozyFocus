@@ -1,3 +1,4 @@
+import "fake-indexeddb/auto";
 import { describe, expect, it } from "vitest";
 import { renderApp } from "../src/ui/render";
 
@@ -18,6 +19,14 @@ const setup = () => {
 };
 
 const waitForRoute = async () => new Promise((resolve) => setTimeout(resolve, 0));
+const waitForCalendarLoad = async () => {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    if (document.querySelectorAll(".calendar-grid__weekday").length === 7) {
+      return;
+    }
+    await waitForRoute();
+  }
+};
 
 const formatKey = (date: Date) => {
   const year = date.getFullYear();
@@ -33,14 +42,14 @@ describe("calendar navigation", () => {
     navCalendar.click();
     await waitForRoute();
     expect(document.querySelector('[data-testid="calendar-view"]')).toBeTruthy();
-    expect(window.location.hash).toBe("#/calendar");
+    expect(window.location.pathname).toBe("/calendar");
     expect(window.location.href.startsWith(baseHref)).toBe(true);
   });
 
   it("calendar-grid exists and has 7 columns header row", async () => {
     const { navCalendar } = setup();
     navCalendar.click();
-    await waitForRoute();
+    await waitForCalendarLoad();
     const grid = document.querySelector('[data-testid="calendar-grid"]');
     expect(grid).toBeTruthy();
     const weekdays = document.querySelectorAll(".calendar-grid__weekday");
@@ -50,7 +59,7 @@ describe("calendar navigation", () => {
   it("default selected day is today and drawer is visible", async () => {
     const { navCalendar } = setup();
     navCalendar.click();
-    await waitForRoute();
+    await waitForCalendarLoad();
     const today = new Date();
     const dayCell = document.querySelector(
       `[data-testid="day-${formatKey(today)}"]`

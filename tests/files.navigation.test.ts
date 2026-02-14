@@ -1,3 +1,4 @@
+import "fake-indexeddb/auto";
 import { describe, expect, it } from "vitest";
 import { renderApp } from "../src/ui/render";
 
@@ -32,7 +33,7 @@ describe("files navigation", () => {
     navFiles.click();
     await waitForRoute();
     expect(document.querySelector('[data-testid="files-view"]')).toBeTruthy();
-    expect(window.location.hash).toBe("#/files");
+    expect(window.location.pathname).toBe("/files");
     expect(window.location.href.startsWith(baseHref)).toBe(true);
   });
 

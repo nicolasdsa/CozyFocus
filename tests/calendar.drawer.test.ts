@@ -16,6 +16,22 @@ const createRoot = (): HTMLElement => {
 };
 
 const flush = async () => new Promise((resolve) => setTimeout(resolve, 0));
+const waitForCalendarLoad = async () => {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (document.querySelectorAll(".calendar-grid__weekday").length === 7) {
+      return;
+    }
+    await flush();
+  }
+};
+const waitForCondition = async (check: () => boolean, attempts = 20) => {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (check()) {
+      return;
+    }
+    await flush();
+  }
+};
 
 const formatDayKey = (date: Date): string => {
   const year = date.getFullYear();
@@ -43,8 +59,7 @@ describe("calendar drawer", () => {
     const root = createRoot();
     mountCalendarView(root);
 
-    await flush();
-    await flush();
+    await waitForCalendarLoad();
 
     const today = new Date();
     const title = document.querySelector<HTMLElement>("[data-testid=\"drawer-day-title\"]");
@@ -113,8 +128,7 @@ describe("calendar drawer", () => {
     db.close();
 
     mountCalendarView(root);
-    await flush();
-    await flush();
+    await waitForCalendarLoad();
 
     const dayCell = document.querySelector<HTMLElement>(
       `[data-testid=\"day-${dayKey}\"]`
@@ -124,8 +138,10 @@ describe("calendar drawer", () => {
     }
     dayCell.click();
 
-    await flush();
-    await flush();
+    await waitForCondition(() => {
+      const title = document.querySelector<HTMLElement>("[data-testid=\"drawer-day-title\"]");
+      return title?.textContent === formatDayTitle(target);
+    });
 
     const title = document.querySelector<HTMLElement>("[data-testid=\"drawer-day-title\"]");
     const focusMetric = document.querySelector<HTMLElement>(
@@ -203,8 +219,7 @@ describe("calendar drawer", () => {
     db.close();
 
     mountCalendarView(root);
-    await flush();
-    await flush();
+    await waitForCalendarLoad();
 
     const timeline = document.querySelectorAll<HTMLElement>(".timeline-item");
     expect(timeline.length).toBeGreaterThan(0);

@@ -16,6 +16,22 @@ const createRoot = (): HTMLElement => {
 };
 
 const flush = async () => new Promise((resolve) => setTimeout(resolve, 0));
+const waitForCalendarLoad = async () => {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (document.querySelectorAll(".calendar-grid__weekday").length === 7) {
+      return;
+    }
+    await flush();
+  }
+};
+const waitForCondition = async (check: () => boolean, attempts = 20) => {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (check()) {
+      return;
+    }
+    await flush();
+  }
+};
 
 const formatKey = (date: Date): string => {
   const year = date.getFullYear();
@@ -30,7 +46,7 @@ describe("calendar polish", () => {
     const root = createRoot();
     mountCalendarView(root);
 
-    await flush();
+    await waitForCalendarLoad();
 
     const header = document.querySelector<HTMLElement>(".cal-header");
     const title = document.querySelector<HTMLElement>(".cal-month-title");
@@ -67,8 +83,7 @@ describe("calendar polish", () => {
     db.close();
 
     mountCalendarView(root);
-    await flush();
-    await flush();
+    await waitForCalendarLoad();
 
     const outsideCells = document.querySelectorAll(".cal-cell--outside");
     expect(outsideCells.length).toBeGreaterThan(0);
@@ -85,8 +100,7 @@ describe("calendar polish", () => {
     const root = createRoot();
     mountCalendarView(root);
 
-    await flush();
-    await flush();
+    await waitForCalendarLoad();
 
     const today = new Date();
     const firstKey = formatKey(today);
@@ -102,11 +116,15 @@ describe("calendar polish", () => {
     }
 
     secondCell.click();
-    await flush();
-    await flush();
+    await waitForCondition(() => {
+      const updated = document.querySelector<HTMLElement>(`[data-testid=\"day-${secondKey}\"]`);
+      return updated?.classList.contains("cal-cell--selected") === true;
+    });
 
-    expect(firstCell.classList.contains("cal-cell--selected")).toBe(false);
-    expect(secondCell.classList.contains("cal-cell--selected")).toBe(true);
+    const firstCellUpdated = document.querySelector<HTMLElement>(`[data-testid=\"day-${firstKey}\"]`);
+    const secondCellUpdated = document.querySelector<HTMLElement>(`[data-testid=\"day-${secondKey}\"]`);
+    expect(firstCellUpdated?.classList.contains("cal-cell--selected")).toBe(false);
+    expect(secondCellUpdated?.classList.contains("cal-cell--selected")).toBe(true);
 
     const drawer = document.querySelector<HTMLElement>("[data-testid=\"calendar-drawer\"]");
     expect(drawer?.classList.contains("drawer--open")).toBe(true);
@@ -132,8 +150,7 @@ describe("calendar polish", () => {
     db.close();
 
     mountCalendarView(root);
-    await flush();
-    await flush();
+    await waitForCalendarLoad();
 
     const metricCards = document.querySelectorAll<HTMLElement>(".metric-card");
     expect(metricCards.length).toBeGreaterThan(0);

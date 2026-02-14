@@ -2,7 +2,7 @@ import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
 import { describe, expect, it } from "vitest";
 import { mountTasksView } from "../src/features/tasks/tasksView";
-import { getLocalDayKey } from "../src/storage";
+import { getLocalDayKey, openCozyDB } from "../src/storage";
 
 const createRoot = (): HTMLElement => {
   document.body.innerHTML = "<aside data-testid=\"task-queue\"></aside>";
@@ -17,6 +17,14 @@ const createDbName = (suffix: string) =>
   `cozyfocus-tasks-ui-${suffix}-${crypto.randomUUID()}`;
 
 const flush = async () => new Promise((resolve) => setTimeout(resolve, 0));
+const waitFor = async (check: () => boolean, attempts = 20) => {
+  for (let index = 0; index < attempts; index += 1) {
+    if (check()) {
+      return;
+    }
+    await flush();
+  }
+};
 
 const addTaskViaUi = async (root: HTMLElement, title: string) => {
   const addButton = root.querySelector<HTMLButtonElement>(
@@ -35,7 +43,13 @@ const addTaskViaUi = async (root: HTMLElement, title: string) => {
   }
   input.value = title;
   input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-  await flush();
+  await waitFor(() => {
+    const items = Array.from(root.querySelectorAll<HTMLElement>("[data-task-id]"));
+    if (items.length === 0) {
+      return false;
+    }
+    return items.every((item) => !item.dataset.taskId?.startsWith("temp-"));
+  });
 };
 
 describe("tasks UI polish", () => {
@@ -91,10 +105,19 @@ describe("tasks UI polish", () => {
   it("checkbox has custom classes for unchecked and checked", async () => {
     const dbName = createDbName("checkbox");
     const dayKey = getLocalDayKey();
+    const seededDb = await openCozyDB(dbName);
+    await seededDb.put("tasks", {
+      id: crypto.randomUUID(),
+      dayKey,
+      title: "Checkbox styling",
+      completed: false,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      completedAt: null
+    });
+    seededDb.close();
     const root = createRoot();
     const view = await mountTasksView(root, { dbName, dayKey });
-
-    await addTaskViaUi(root, "Checkbox styling");
 
     const item = root.querySelector<HTMLElement>('[data-testid^="task-item-"]');
     const checkbox = item?.querySelector<HTMLInputElement>('input[type="checkbox"]');
@@ -108,7 +131,12 @@ describe("tasks UI polish", () => {
 
     checkbox.checked = true;
     checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-    await flush();
+    await waitFor(() => {
+      const updatedCheckbox = root.querySelector<HTMLInputElement>(
+        '[data-testid^="task-item-"] input[type="checkbox"]'
+      );
+      return Boolean(updatedCheckbox?.checked);
+    });
 
     const updatedItem = root.querySelector<HTMLElement>('[data-testid^="task-item-"]');
     const updatedCheckbox = updatedItem?.querySelector<HTMLInputElement>(

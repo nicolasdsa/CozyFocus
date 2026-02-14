@@ -1,10 +1,17 @@
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { deleteDB } from "idb";
 import { openCozyDB, getLocalDayKey } from "../src/storage";
 import { renderApp } from "../src/ui/render";
 
 const waitForRoute = async () => new Promise((resolve) => setTimeout(resolve, 0));
+const waitFor = async (check: () => boolean, attempts = 20) => {
+  for (let index = 0; index < attempts; index += 1) {
+    if (check()) {
+      return;
+    }
+    await waitForRoute();
+  }
+};
 
 const setupSettings = async () => {
   document.body.innerHTML = "<div id=\"app\"></div>";
@@ -75,12 +82,31 @@ const seedAllStores = async () => {
   db.close();
 };
 
+const clearAllStoresForTest = async () => {
+  const db = await openCozyDB();
+  const tx = db.transaction(
+    ["tasks", "notes", "docs", "tagLibrary", "sessions", "stats", "settings"],
+    "readwrite"
+  );
+  await Promise.all([
+    tx.objectStore("tasks").clear(),
+    tx.objectStore("notes").clear(),
+    tx.objectStore("docs").clear(),
+    tx.objectStore("tagLibrary").clear(),
+    tx.objectStore("sessions").clear(),
+    tx.objectStore("stats").clear(),
+    tx.objectStore("settings").clear()
+  ]);
+  await tx.done;
+  db.close();
+};
+
 beforeEach(async () => {
-  await deleteDB("cozyfocus");
+  await clearAllStoresForTest();
 });
 
 afterEach(async () => {
-  await deleteDB("cozyfocus");
+  await clearAllStoresForTest();
 });
 
 describe("settings delete data", () => {
@@ -139,7 +165,11 @@ describe("settings delete data", () => {
       "[data-testid=\"delete-confirm\"]"
     );
     confirmButton?.click();
-    await waitForRoute();
+    await waitFor(() => {
+      const status = document.querySelector<HTMLDivElement>("[data-testid=\"delete-status\"]");
+      const text = status?.textContent?.toLowerCase() ?? "";
+      return text.includes("deleted");
+    });
 
     const status = document.querySelector<HTMLDivElement>("[data-testid=\"delete-status\"]");
     expect(status?.textContent?.toLowerCase()).toContain("deleted");

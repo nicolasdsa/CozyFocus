@@ -14,6 +14,14 @@ const flushPromises = async () => {
   await Promise.resolve();
   await Promise.resolve();
 };
+const waitFor = async (check: () => boolean, attempts = 20) => {
+  for (let index = 0; index < attempts; index += 1) {
+    if (check()) {
+      return;
+    }
+    await flushPromises();
+  }
+};
 
 afterEach(() => {
   vi.useRealTimers();
@@ -74,6 +82,7 @@ describe("pomodoro", () => {
     vi.useFakeTimers();
     const notifications: Array<{ title: string; options?: NotificationOptions }> = [];
     const originalNotification = globalThis.Notification;
+    const originalAudio = globalThis.Audio;
 
     class MockNotification {
       static permission: NotificationPermission = "granted";
@@ -90,6 +99,8 @@ describe("pomodoro", () => {
 
     // @ts-expect-error - test override.
     globalThis.Notification = MockNotification;
+    // @ts-expect-error - avoid jsdom media playback side effects in unit tests.
+    globalThis.Audio = undefined;
 
     const root = document.createElement("section");
     root.dataset.testid = "pomodoro";
@@ -118,9 +129,9 @@ describe("pomodoro", () => {
     const service: PomodoroService = {
       getStats: async () => emptyStats,
       getDefaults: async () => ({
-        focus: POMODORO_DURATIONS_MS.focus,
-        shortBreak: POMODORO_DURATIONS_MS.shortBreak,
-        longBreak: POMODORO_DURATIONS_MS.longBreak,
+        focus: 1000,
+        shortBreak: 1000,
+        longBreak: 1000,
         updatedAt: Date.now()
       }),
       saveDefaults: async (defaults) => defaults,
@@ -146,9 +157,9 @@ describe("pomodoro", () => {
     }
 
     startButton.click();
-    vi.advanceTimersByTime(1000);
-    await vi.runAllTimersAsync();
     await flushPromises();
+    await vi.advanceTimersByTimeAsync(1000);
+    await waitFor(() => notifications.length === 1);
 
     expect(notifications).toHaveLength(1);
     expect(notifications[0]?.title).toBe("Session complete");
@@ -157,5 +168,7 @@ describe("pomodoro", () => {
 
     // @ts-expect-error - restore original.
     globalThis.Notification = originalNotification;
+    // @ts-expect-error - restore original.
+    globalThis.Audio = originalAudio;
   });
 });

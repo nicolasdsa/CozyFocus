@@ -50,6 +50,9 @@ describe("pomodoro behavior", () => {
 
   it("after completion resets to default duration", async () => {
     vi.useFakeTimers();
+    const originalAudio = globalThis.Audio;
+    // @ts-expect-error - avoid jsdom media playback side effects in unit tests.
+    globalThis.Audio = undefined;
     const root = document.createElement("section");
     document.body.innerHTML = "";
     document.body.appendChild(root);
@@ -102,14 +105,15 @@ describe("pomodoro behavior", () => {
     }
 
     startButton.click();
-    vi.advanceTimersByTime(25 * 60 * 1000);
-    await vi.runAllTimersAsync();
+    await vi.advanceTimersByTimeAsync(25 * 60 * 1000);
     await flushPromises();
 
     expect(timeEl.textContent?.replace(/\s+/g, "")).toBe("25:00");
 
     await view.destroy();
-  });
+    // @ts-expect-error - restore original.
+    globalThis.Audio = originalAudio;
+  }, 10000);
 
   it("editing duration updates heading and persists as default", async () => {
     const dbName = `cozyfocus-pomodoro-defaults-${crypto.randomUUID()}`;

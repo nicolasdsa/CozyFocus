@@ -38,6 +38,9 @@ const renderFocusView = async (root: HTMLElement): Promise<CleanupTask[]> => {
   `;
 
   const cleanups: CleanupTask[] = [];
+  const stealthToggle = root.querySelector<HTMLButtonElement>(
+    '[data-testid="stealth-toggle"]'
+  );
 
   if ("indexedDB" in globalThis) {
     const taskQueue = qs<HTMLElement>(root, "task-queue");
@@ -56,7 +59,9 @@ const renderFocusView = async (root: HTMLElement): Promise<CleanupTask[]> => {
     cleanups.push(() => streakHandle.destroy());
   }
 
-  const stealthToggle = qs<HTMLButtonElement>(root, "stealth-toggle");
+  if (!stealthToggle) {
+    return cleanups;
+  }
   const stealthHandle = mountStealth(stealthToggle);
   cleanups.push(() => stealthHandle.destroy());
 
@@ -93,6 +98,7 @@ export const renderApp = (root: HTMLElement): void => {
   const navCalendar = qs<HTMLButtonElement>(root, "nav-calendar");
   const navSettings = qs<HTMLButtonElement>(root, "nav-settings");
   let activeCleanups: CleanupTask[] = [];
+  let renderVersion = 0;
 
   const setActiveNav = (route: AppRoute) => {
     const navButtons = root.querySelectorAll<HTMLButtonElement>("[data-route]");
@@ -106,6 +112,8 @@ export const renderApp = (root: HTMLElement): void => {
   };
 
   const renderRoute = (route: AppRoute) => {
+    renderVersion += 1;
+    const currentRenderVersion = renderVersion;
     setActiveNav(route);
     const tasks = activeCleanups;
     activeCleanups = [];
@@ -125,6 +133,10 @@ export const renderApp = (root: HTMLElement): void => {
     }
 
     void renderFocusView(viewRoot).then((cleanups) => {
+      if (currentRenderVersion !== renderVersion) {
+        void Promise.all(cleanups.map(async (cleanup) => cleanup()));
+        return;
+      }
       activeCleanups = cleanups;
     });
   };

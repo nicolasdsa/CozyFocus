@@ -59,6 +59,21 @@ describe("settings export", () => {
   });
 
   it("downloads json bundles with a .json filename", () => {
+    if (!("createObjectURL" in URL)) {
+      Object.defineProperty(URL, "createObjectURL", {
+        writable: true,
+        configurable: true,
+        value: () => "blob:pre-mock"
+      });
+    }
+    if (!("revokeObjectURL" in URL)) {
+      Object.defineProperty(URL, "revokeObjectURL", {
+        writable: true,
+        configurable: true,
+        value: () => undefined
+      });
+    }
+
     const createObjectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:mock");
     const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);

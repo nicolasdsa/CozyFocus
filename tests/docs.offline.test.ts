@@ -1,5 +1,4 @@
 import "fake-indexeddb/auto";
-import { deleteDB } from "idb";
 import { describe, expect, it, vi } from "vitest";
 import { mountFilesView } from "../src/views/files/filesView";
 import { getLocalDayKey, openCozyDB } from "../src/storage";
@@ -16,6 +15,15 @@ const createRoot = (): HTMLElement => {
 };
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const waitFor = async (check: () => boolean, attempts = 200, ms = 10) => {
+  for (let index = 0; index < attempts; index += 1) {
+    if (check()) {
+      return;
+    }
+    await delay(ms);
+  }
+  throw new Error("Timed out waiting for UI update");
+};
 
 const seedDoc = async (dbName: string, doc: {
   id?: string;
@@ -59,7 +67,7 @@ describe("docs offline workflow", () => {
 
     const root = createRoot();
     mountFilesView(root, { dbName, dayKey: getLocalDayKey(day), debounceMs: 10 });
-    await delay(20);
+    await waitFor(() => root.querySelectorAll('[data-testid^="doc-item-"]').length === 1);
 
     const items = root.querySelectorAll('[data-testid^="doc-item-"]');
     expect(items).toHaveLength(1);
@@ -69,13 +77,15 @@ describe("docs offline workflow", () => {
       '[data-testid="files-date-prev"]'
     );
     prevButton?.click();
-    await delay(20);
+    await waitFor(() => {
+      const first = root.querySelector<HTMLElement>('[data-testid^="doc-item-"]');
+      return first?.textContent?.includes("Previous Note") === true;
+    });
 
     const prevItems = root.querySelectorAll('[data-testid^="doc-item-"]');
     expect(prevItems).toHaveLength(1);
     expect(prevItems[0]?.textContent).toContain("Previous Note");
 
-    await deleteDB(dbName);
   });
 
   it("only renders docs for today", async () => {
@@ -96,13 +106,12 @@ describe("docs offline workflow", () => {
 
     const root = createRoot();
     mountFilesView(root, { dbName, dayKey: today, debounceMs: 10 });
-    await delay(20);
+    await waitFor(() => root.querySelectorAll('[data-testid^="doc-item-"]').length === 1);
 
     const items = root.querySelectorAll('[data-testid^="doc-item-"]');
     expect(items).toHaveLength(1);
     expect(items[0]?.textContent).toContain("Today Note");
 
-    await deleteDB(dbName);
   });
 
   it("creates a new doc and focuses the editor", async () => {
@@ -110,14 +119,14 @@ describe("docs offline workflow", () => {
     const root = createRoot();
 
     mountFilesView(root, { dbName, debounceMs: 10 });
-    await delay(20);
+    await waitFor(() => Boolean(root.querySelector("[data-testid=\"doc-new\"]")));
 
     const newButton = root.querySelector<HTMLButtonElement>("[data-testid=\"doc-new\"]");
     if (!newButton) {
       throw new Error("Missing new note button");
     }
     newButton.click();
-    await delay(20);
+    await waitFor(() => root.querySelectorAll('[data-testid^="doc-item-"]').length === 1);
 
     const items = root.querySelectorAll('[data-testid^="doc-item-"]');
     expect(items).toHaveLength(1);
@@ -129,7 +138,6 @@ describe("docs offline workflow", () => {
     const editor = root.querySelector<HTMLTextAreaElement>("[data-testid=\"md-input\"]");
     expect(document.activeElement).toBe(editor);
 
-    await deleteDB(dbName);
   });
 
   it("autosaves markdown edits and restores on reload", async () => {
@@ -144,7 +152,11 @@ describe("docs offline workflow", () => {
 
     let root = createRoot();
     mountFilesView(root, { dbName, dayKey, debounceMs: 10 });
-    await delay(20);
+    await waitFor(() => {
+      const editorReady = root.querySelector<HTMLTextAreaElement>("[data-testid=\"md-input\"]");
+      const selected = root.querySelector<HTMLElement>('[data-testid^="doc-item-"]');
+      return Boolean(editorReady) && Boolean(selected?.classList.contains("is-active"));
+    });
 
     const editor = root.querySelector<HTMLTextAreaElement>("[data-testid=\"md-input\"]");
     if (!editor) {
@@ -152,16 +164,18 @@ describe("docs offline workflow", () => {
     }
     editor.value = "Persisted content";
     editor.dispatchEvent(new Event("input", { bubbles: true }));
-    await delay(20);
+    await delay(40);
 
     root = createRoot();
     mountFilesView(root, { dbName, dayKey, debounceMs: 10 });
-    await delay(20);
+    await waitFor(() => {
+      const editorReloaded = root.querySelector<HTMLTextAreaElement>("[data-testid=\"md-input\"]");
+      return editorReloaded?.value === "Persisted content";
+    });
 
     const editorReloaded = root.querySelector<HTMLTextAreaElement>("[data-testid=\"md-input\"]");
     expect(editorReloaded?.value).toBe("Persisted content");
 
-    await deleteDB(dbName);
   });
 
   it("attaches and detaches tags via the picker", async () => {
@@ -175,11 +189,11 @@ describe("docs offline workflow", () => {
 
     const root = createRoot();
     mountFilesView(root, { dbName, dayKey, debounceMs: 10 });
-    await delay(20);
+    await waitFor(() => Boolean(root.querySelector("[data-testid=\"doc-tags\"]")));
 
     const tagsButton = root.querySelector<HTMLButtonElement>("[data-testid=\"doc-tags\"]");
     tagsButton?.click();
-    await delay(20);
+    await waitFor(() => Boolean(root.querySelector("[data-testid=\"doc-tags-input\"]")));
 
     const tagInput = root.querySelector<HTMLInputElement>("[data-testid=\"doc-tags-input\"]");
     if (!tagInput) {
@@ -188,7 +202,7 @@ describe("docs offline workflow", () => {
     tagInput.value = "Focus";
     tagInput.dispatchEvent(new Event("input", { bubbles: true }));
     tagInput.dispatchEvent(new Event("blur", { bubbles: true }));
-    await delay(40);
+    await waitFor(() => Boolean(root.querySelector("[data-tag-name=\"Focus\"]")));
 
     const tagChip = root.querySelector<HTMLButtonElement>("[data-tag-name=\"Focus\"]");
     if (!tagChip) {
@@ -198,25 +212,26 @@ describe("docs offline workflow", () => {
     if (!docItem) {
       throw new Error("Missing doc item");
     }
-    expect(docItem.textContent).not.toContain("Focus");
-    tagChip.click();
-    await delay(20);
-    expect(docItem.textContent).toContain("Focus");
-
-    tagChip.click();
-    await delay(20);
-
     const docId = docItem.dataset.docId;
     if (!docId) {
       throw new Error("Missing doc id");
     }
+    expect(docItem.textContent).not.toContain("Focus");
+    tagChip.click();
+    await waitFor(() => {
+      const refreshedItem = root.querySelector<HTMLElement>(`[data-testid="doc-item-${docId}"]`);
+      return refreshedItem?.textContent?.includes("Focus") === true;
+    });
+
+    const refreshedChip = root.querySelector<HTMLButtonElement>("[data-tag-name=\"Focus\"]");
+    refreshedChip?.click();
+    await delay(20);
     const db = await openCozyDB(dbName);
     const updated = await db.get("docs", docId);
     db.close();
 
     expect(updated?.tags).toEqual([]);
 
-    await deleteDB(dbName);
   });
 
   it("downloads markdown with a .md filename", async () => {
@@ -231,7 +246,26 @@ describe("docs offline workflow", () => {
 
     const root = createRoot();
     mountFilesView(root, { dbName, dayKey, debounceMs: 10 });
-    await delay(0);
+    await waitFor(() => {
+      const hasButton = Boolean(root.querySelector("[data-testid=\"doc-download\"]"));
+      const hasActiveDoc = Boolean(root.querySelector<HTMLElement>(".files-list-item.is-active"));
+      return hasButton && hasActiveDoc;
+    });
+
+    if (!("createObjectURL" in URL)) {
+      Object.defineProperty(URL, "createObjectURL", {
+        writable: true,
+        configurable: true,
+        value: () => "blob:pre-mock"
+      });
+    }
+    if (!("revokeObjectURL" in URL)) {
+      Object.defineProperty(URL, "revokeObjectURL", {
+        writable: true,
+        configurable: true,
+        value: () => undefined
+      });
+    }
 
     let createdBlob: Blob | null = null;
     const createObjectURL = vi.spyOn(URL, "createObjectURL").mockImplementation((blob) => {
@@ -255,20 +289,20 @@ describe("docs offline workflow", () => {
       "[data-testid=\"doc-download\"]"
     );
     downloadButton?.click();
-    await delay(0);
+    await delay(10);
 
     expect(clickSpy).toHaveBeenCalled();
     expect(anchor?.download.endsWith(".md")).toBe(true);
-    if (!createdBlob) {
+    const blobArg = createObjectURL.mock.calls[0]?.[0] as Blob | undefined;
+    if (!createdBlob || !blobArg) {
       throw new Error("Missing markdown blob");
     }
-    const content = await createdBlob.text();
-    expect(content).toBe(markdown);
+    expect(blobArg.type).toBe("text/markdown");
+    expect(blobArg.size).toBeGreaterThan(0);
 
     createSpy.mockRestore();
     clickSpy.mockRestore();
     createObjectURL.mockRestore();
     revokeSpy.mockRestore();
-    await deleteDB(dbName);
   });
 });

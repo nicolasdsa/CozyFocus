@@ -1,3 +1,4 @@
+import "fake-indexeddb/auto";
 import { describe, expect, it } from "vitest";
 import { renderApp } from "../src/ui/render";
 
@@ -26,7 +27,7 @@ describe("settings navigation", () => {
     navSettings.click();
     await waitForRoute();
     expect(document.querySelector('[data-testid="settings-view"]')).toBeTruthy();
-    expect(window.location.hash).toBe("#/settings");
+    expect(window.location.pathname).toBe("/settings");
     expect(window.location.href.startsWith(baseHref)).toBe(true);
   });
 

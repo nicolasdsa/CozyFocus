@@ -106,6 +106,7 @@ export const mountTasksView = async (
   let inputRow: HTMLDivElement | null = null;
   let editingId: string | null = null;
   let currentFocusId: string | null = null;
+  let isDestroyed = false;
   const waveTaskIds = new Set<string>();
   const pendingAdds = new Map<string, Promise<TaskRecord>>();
   const resolvedTempIds = new Map<string, string>();
@@ -130,6 +131,18 @@ export const mountTasksView = async (
       inputRow.remove();
       inputRow = null;
     }
+  };
+
+  const runSafely = (operation: () => Promise<void>) => {
+    void operation().catch((error: unknown) => {
+      if (isDestroyed) {
+        return;
+      }
+      if (error instanceof DOMException && error.name === "InvalidStateError") {
+        return;
+      }
+      console.error(error);
+    });
   };
 
   const handleSubmit = async (input: HTMLInputElement) => {
@@ -179,7 +192,7 @@ export const mountTasksView = async (
     tasks = tasks.map((task) => (task.id === tempTask.id ? merged : task));
     if (currentFocusId === tempTask.id) {
       currentFocusId = persisted.id;
-      void service.setCurrentFocus(dayKey, persisted.id);
+      await service.setCurrentFocus(dayKey, persisted.id);
     }
     const tempItem = list.querySelector<HTMLElement>(`[data-task-id="${tempTask.id}"]`);
     if (tempItem) {
@@ -237,7 +250,9 @@ export const mountTasksView = async (
     input.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
-        void handleSubmit(input);
+        runSafely(async () => {
+          await handleSubmit(input);
+        });
       }
 
       if (event.key === "Escape") {
@@ -247,7 +262,9 @@ export const mountTasksView = async (
     });
 
     input.addEventListener("blur", () => {
-      void handleSubmit(input);
+      runSafely(async () => {
+        await handleSubmit(input);
+      });
     });
   };
 
@@ -342,7 +359,9 @@ export const mountTasksView = async (
     tasks = tasks.filter((task) => task.id !== taskId);
     if (currentFocusId === taskId) {
       currentFocusId = null;
-      void service.setCurrentFocus(dayKey, null);
+      runSafely(async () => {
+        await service.setCurrentFocus(dayKey, null);
+      });
     }
     renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
     if (taskId.startsWith("temp-")) {
@@ -413,7 +432,9 @@ export const mountTasksView = async (
         return;
       }
       target.dataset.committing = "true";
-      void commitEdit(item.dataset.taskId, target);
+      runSafely(async () => {
+        await commitEdit(item.dataset.taskId, target);
+      });
     }
 
     if (event.key === "Escape") {
@@ -438,7 +459,9 @@ export const mountTasksView = async (
       return;
     }
     target.dataset.committing = "true";
-    void commitEdit(item.dataset.taskId, target);
+    runSafely(async () => {
+      await commitEdit(item.dataset.taskId, target);
+    });
   });
 
   list.addEventListener("mouseover", (event) => {
@@ -477,7 +500,7 @@ export const mountTasksView = async (
       return;
     }
 
-    void (async () => {
+    runSafely(async () => {
       let taskId = item.dataset.taskId;
       const resolved = await resolveTaskId(taskId);
       if (!resolved) {
@@ -509,7 +532,7 @@ export const mountTasksView = async (
 
       await service.toggleTask(taskId, target.checked);
       await refresh();
-    })();
+    });
   });
 
   list.addEventListener("click", (event) => {
@@ -542,7 +565,7 @@ export const mountTasksView = async (
     if (currentFocusId === taskId) {
       return;
     }
-    void (async () => {
+    runSafely(async () => {
       currentFocusId = taskId;
       renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
       const resolved = await resolveTaskId(taskId);
@@ -553,7 +576,7 @@ export const mountTasksView = async (
         }
         await service.setCurrentFocus(dayKey, resolved);
       }
-    })();
+    });
   });
 
   await refresh();
@@ -561,6 +584,7 @@ export const mountTasksView = async (
   return {
     refresh,
     destroy: async () => {
+      isDestroyed = true;
       root.innerHTML = "";
       await service.close();
     }

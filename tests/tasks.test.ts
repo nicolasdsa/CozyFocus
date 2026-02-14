@@ -16,6 +16,22 @@ const createRoot = (): HTMLElement => {
 const createDbName = () => `cozyfocus-tasks-test-${crypto.randomUUID()}`;
 
 const flush = async () => new Promise((resolve) => setTimeout(resolve, 0));
+const waitFor = async (check: () => boolean, attempts = 20) => {
+  for (let index = 0; index < attempts; index += 1) {
+    if (check()) {
+      return;
+    }
+    await flush();
+  }
+};
+const waitForAsync = async (check: () => Promise<boolean>, attempts = 20) => {
+  for (let index = 0; index < attempts; index += 1) {
+    if (await check()) {
+      return;
+    }
+    await flush();
+  }
+};
 
 const addTaskViaUi = async (root: HTMLElement, title: string) => {
   const addButton = root.querySelector<HTMLButtonElement>(
@@ -34,7 +50,13 @@ const addTaskViaUi = async (root: HTMLElement, title: string) => {
   }
   input.value = title;
   input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-  await flush();
+  await waitFor(() => {
+    const items = Array.from(root.querySelectorAll<HTMLElement>("[data-task-id]"));
+    if (items.length === 0) {
+      return false;
+    }
+    return items.every((item) => !item.dataset.taskId?.startsWith("temp-"));
+  });
 };
 
 describe("tasks", () => {
@@ -63,10 +85,19 @@ describe("tasks", () => {
   it("toggling checkbox persists completed state", async () => {
     const dbName = createDbName();
     const dayKey = getLocalDayKey();
+    const seededDb = await openCozyDB(dbName);
+    await seededDb.put("tasks", {
+      id: crypto.randomUUID(),
+      dayKey,
+      title: "Clear inbox",
+      completed: false,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      completedAt: null
+    });
+    seededDb.close();
     const root = createRoot();
     const view = await mountTasksView(root, { dbName, dayKey });
-
-    await addTaskViaUi(root, "Clear inbox");
 
     const checkbox = root.querySelector<HTMLInputElement>(
       '[data-testid^="task-item-"] input[type="checkbox"]'
@@ -77,9 +108,18 @@ describe("tasks", () => {
 
     checkbox.checked = true;
     checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-    await flush();
+    await waitFor(() => {
+      const updated = root.querySelector<HTMLInputElement>(
+        '[data-testid^="task-item-"] input[type="checkbox"]'
+      );
+      return Boolean(updated?.checked);
+    });
 
     const db = await openCozyDB(dbName);
+    await waitForAsync(async () => {
+      const latest = await getTasksByDay(db, dayKey);
+      return latest[0]?.completed === true;
+    });
     const tasks = await getTasksByDay(db, dayKey);
     expect(tasks).toHaveLength(1);
     expect(tasks[0]?.completed).toBe(true);
