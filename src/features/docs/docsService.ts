@@ -6,7 +6,8 @@ type DocPatch = Partial<Pick<DocRecord, "title" | "markdown" | "tags">>;
 export interface DocsService {
   todayKey: string;
   getDocs: () => Promise<DocRecord[]>;
-  createDoc: (title: string, markdown?: string) => Promise<DocRecord>;
+  getDocsByDayRange: (startDayKey: string, endDayKey: string) => Promise<DocRecord[]>;
+  createDoc: (title: string, markdown?: string, dayKey?: string) => Promise<DocRecord>;
   updateDoc: (id: string, patch: DocPatch) => Promise<DocRecord | null>;
   deleteDoc: (id: string) => Promise<void>;
   toggleTag: (id: string, tagName: string) => Promise<DocRecord | null>;
@@ -41,18 +42,30 @@ export const createDocsService = (options?: {
   const timers = new Map<string, number>();
   let selectedId: string | null = null;
 
-  const getDocs = async (): Promise<DocRecord[]> => {
+  const getDocsByDayRange = async (startDayKey: string, endDayKey: string): Promise<DocRecord[]> => {
     const db = await dbPromise;
-    const docs = await db.getAllFromIndex("docs", "dayKey", todayKey);
-    return sortDocs(docs);
+    const all = await db.getAll("docs");
+    const [start, end] = startDayKey <= endDayKey
+      ? [startDayKey, endDayKey]
+      : [endDayKey, startDayKey];
+    const filtered = all.filter((doc) => doc.dayKey >= start && doc.dayKey <= end);
+    return sortDocs(filtered);
   };
 
-  const createDoc = async (title: string, markdown: string = ""): Promise<DocRecord> => {
+  const getDocs = async (): Promise<DocRecord[]> => {
+    return getDocsByDayRange(todayKey, todayKey);
+  };
+
+  const createDoc = async (
+    title: string,
+    markdown: string = "",
+    dayKey?: string
+  ): Promise<DocRecord> => {
     const db = await dbPromise;
     const now = Date.now();
     const doc: DocRecord = {
       id: crypto.randomUUID(),
-      dayKey: todayKey,
+      dayKey: dayKey ?? todayKey,
       title,
       markdown,
       tags: [],
@@ -181,6 +194,7 @@ export const createDocsService = (options?: {
   return {
     todayKey,
     getDocs,
+    getDocsByDayRange,
     createDoc,
     updateDoc,
     deleteDoc,

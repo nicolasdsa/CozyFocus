@@ -1,4 +1,5 @@
 import type { DocRecord, TagRecord } from "../../storage";
+import { getLocalDayKey } from "../../storage/dayKey";
 import { qs } from "../../ui/dom";
 import { createDocsService, type DocsService } from "../../features/docs/docsService";
 import { mountMarkdownEditor } from "./editor/editorView";
@@ -9,6 +10,8 @@ interface FilesViewOptions {
   debounceMs?: number;
   service?: DocsService;
 }
+
+type DateMode = "day" | "week" | "month" | "range";
 
 interface FilesState {
   docs: DocRecord[];
@@ -21,7 +24,25 @@ interface FilesState {
   isCreatingDoc: boolean;
   pendingTitle: string;
   pendingMarkdown: string;
+  dateMode: DateMode;
+  anchorDate: Date;
+  rangeFrom: string;
+  rangeTo: string;
+  datePopoverOpen: boolean;
 }
+
+const TITLE_MAX_CHARS = 54;
+const SNIPPET_MAX_CHARS = 80;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const truncateWithDots = (value: string, maxChars: number): string => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+  return trimmed.length > maxChars ? `${trimmed.slice(0, maxChars).trimEnd()}...` : trimmed;
+};
 
 const formatTime = (timestamp: number): string =>
   new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
@@ -29,17 +50,134 @@ const formatTime = (timestamp: number): string =>
 const formatDate = (timestamp: number): string =>
   new Date(timestamp).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
 
+const parseDayKey = (value: string): Date | null => {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return null;
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  const parsed = new Date(year, month, day);
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month ||
+    parsed.getDate() !== day
+  ) {
+    return null;
+  }
+  return parsed;
+};
+
+const toDayKey = (date: Date): string => getLocalDayKey(date);
+
+const addDays = (date: Date, amount: number): Date => {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + amount);
+};
+
+const startOfWeek = (date: Date): Date => {
+  const weekday = (date.getDay() + 6) % 7;
+  return addDays(new Date(date.getFullYear(), date.getMonth(), date.getDate()), -weekday);
+};
+
+const endOfWeek = (date: Date): Date => addDays(startOfWeek(date), 6);
+
+const startOfMonth = (date: Date): Date => new Date(date.getFullYear(), date.getMonth(), 1);
+
+const endOfMonth = (date: Date): Date => new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+const isSameDay = (left: Date, right: Date): boolean =>
+  left.getFullYear() === right.getFullYear() &&
+  left.getMonth() === right.getMonth() &&
+  left.getDate() === right.getDate();
+
+const isSameWeek = (left: Date, right: Date): boolean =>
+  isSameDay(startOfWeek(left), startOfWeek(right));
+
+const formatDayLabel = (date: Date): string =>
+  date.toLocaleDateString([], { day: "2-digit", month: "short", year: "numeric" });
+
+const formatMonthLabel = (date: Date): string =>
+  date.toLocaleDateString([], { month: "short", year: "numeric" });
+
+const formatRangeLabel = (start: Date, end: Date): string => {
+  if (start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth()) {
+    return `${start
+      .toLocaleDateString([], { day: "2-digit" })}-${end.toLocaleDateString([], {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    })}`;
+  }
+  return `${start.toLocaleDateString([], {
+    day: "2-digit",
+    month: "short"
+  })}-${end.toLocaleDateString([], { day: "2-digit", month: "short", year: "numeric" })}`;
+};
+
+const getDateWindow = (state: Pick<FilesState, "dateMode" | "anchorDate" | "rangeFrom" | "rangeTo">) => {
+  const today = new Date();
+
+  if (state.dateMode === "day") {
+    const start = new Date(state.anchorDate.getFullYear(), state.anchorDate.getMonth(), state.anchorDate.getDate());
+    return {
+      start,
+      end: start,
+      label: isSameDay(start, today) ? "Today" : formatDayLabel(start),
+      chipLabel: isSameDay(start, today) ? "Today" : formatDayLabel(start)
+    };
+  }
+
+  if (state.dateMode === "week") {
+    const start = startOfWeek(state.anchorDate);
+    const end = endOfWeek(state.anchorDate);
+    return {
+      start,
+      end,
+      label: isSameWeek(state.anchorDate, today) ? "This week" : formatRangeLabel(start, end),
+      chipLabel: isSameWeek(state.anchorDate, today) ? "This week" : formatRangeLabel(start, end)
+    };
+  }
+
+  if (state.dateMode === "month") {
+    const start = startOfMonth(state.anchorDate);
+    const end = endOfMonth(state.anchorDate);
+    return {
+      start,
+      end,
+      label: formatMonthLabel(state.anchorDate),
+      chipLabel: formatMonthLabel(state.anchorDate)
+    };
+  }
+
+  const parsedFrom = parseDayKey(state.rangeFrom);
+  const parsedTo = parseDayKey(state.rangeTo);
+  const fallback = new Date(state.anchorDate.getFullYear(), state.anchorDate.getMonth(), state.anchorDate.getDate());
+  const from = parsedFrom ?? fallback;
+  const to = parsedTo ?? from;
+  const start = from <= to ? from : to;
+  const end = from <= to ? to : from;
+
+  return {
+    start,
+    end,
+    label: formatRangeLabel(start, end),
+    chipLabel: formatRangeLabel(start, end)
+  };
+};
+
 const getSnippet = (markdown: string): string => {
   const lines = markdown.split(/\r?\n/).map((line) => line.trim());
   const firstLine = lines.find((line) => line.length > 0) ?? "";
   if (firstLine) {
-    return firstLine.length > 80 ? `${firstLine.slice(0, 80)}…` : firstLine;
+    return truncateWithDots(firstLine, SNIPPET_MAX_CHARS);
   }
   const fallback = markdown.replace(/\s+/g, " ").trim();
   if (!fallback) {
     return "Start writing...";
   }
-  return fallback.length > 80 ? `${fallback.slice(0, 80)}…` : fallback;
+  return truncateWithDots(fallback, SNIPPET_MAX_CHARS);
 };
 
 const sanitizeFilename = (value: string): string => {
@@ -65,20 +203,29 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
     <section class="files-view" data-testid="files-view">
       <aside class="files-aside">
         <div class="files-aside-header">
-          <div>
-            <p class="files-overline">Archive</p>
-            <h2 class="files-title">Today</h2>
+          <p class="files-overline">Archive</p>
+          <div class="files-date-switcher" data-testid="files-date-switcher">
+            <button class="files-icon-btn" type="button" data-testid="files-date-prev" aria-label="Previous period">◀</button>
+            <button class="files-date-trigger" type="button" data-testid="files-date-trigger" aria-haspopup="dialog" aria-expanded="false">
+              <span data-testid="files-date-label">Today</span>
+              <span aria-hidden="true">▼</span>
+            </button>
+            <button class="files-icon-btn" type="button" data-testid="files-date-next" aria-label="Next period">▶</button>
           </div>
-          <button class="files-icon-btn" type="button" aria-label="Filter notes">
-            Filter
-          </button>
+          <div class="files-mode-segment" role="tablist" aria-label="Date mode">
+            <button type="button" class="files-mode-btn is-active" data-testid="files-mode-day" data-mode="day">Day</button>
+            <button type="button" class="files-mode-btn" data-testid="files-mode-week" data-mode="week">Week</button>
+            <button type="button" class="files-mode-btn" data-testid="files-mode-month" data-mode="month">Month</button>
+            <button type="button" class="files-mode-btn" data-testid="files-mode-range" data-mode="range">Range</button>
+          </div>
+          <div class="files-date-popover" data-testid="files-date-popover" hidden></div>
         </div>
-        <label class="files-search" aria-label="Search today's notes">
+        <label class="files-search" aria-label="Search notes">
           <span class="files-search-label">Search</span>
           <input
             class="files-search-input"
             type="search"
-            placeholder="Search today's notes..."
+            placeholder="Search notes..."
             data-testid="files-search"
           />
         </label>
@@ -90,7 +237,7 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
       <main class="files-main" data-testid="files-editor">
         <div class="files-main-header">
           <div class="files-title-block">
-            <p class="files-overline">Archive / Today</p>
+            <p class="files-overline" data-testid="files-main-context">Archive / Today</p>
             <input
               class="files-doc-title-input"
               type="text"
@@ -122,12 +269,21 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
   const newButton = qs<HTMLButtonElement>(root, "doc-new");
   const downloadButton = qs<HTMLButtonElement>(root, "doc-download");
   const meta = qs<HTMLDivElement>(root, "doc-meta");
+  const mainContext = qs<HTMLElement>(root, "files-main-context");
+  const dateLabel = qs<HTMLElement>(root, "files-date-label");
+  const dateTrigger = qs<HTMLButtonElement>(root, "files-date-trigger");
+  const datePopover = qs<HTMLDivElement>(root, "files-date-popover");
+  const datePrev = qs<HTMLButtonElement>(root, "files-date-prev");
+  const dateNext = qs<HTMLButtonElement>(root, "files-date-next");
+  const modeButtons = root.querySelectorAll<HTMLButtonElement>("[data-mode]");
 
   const service = options.service ?? createDocsService({
     dbName: options.dbName,
     dayKey: options.dayKey,
     debounceMs: options.debounceMs
   });
+
+  const initialAnchor = parseDayKey(options.dayKey ?? "") ?? new Date();
 
   let state: FilesState = {
     docs: [],
@@ -139,7 +295,12 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
     tagDraft: "",
     isCreatingDoc: false,
     pendingTitle: "",
-    pendingMarkdown: ""
+    pendingMarkdown: "",
+    dateMode: "day",
+    anchorDate: new Date(initialAnchor.getFullYear(), initialAnchor.getMonth(), initialAnchor.getDate()),
+    rangeFrom: toDayKey(initialAnchor),
+    rangeTo: toDayKey(initialAnchor),
+    datePopoverOpen: false
   };
 
   const editor = mountMarkdownEditor(editorRoot, {
@@ -148,6 +309,60 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
       void handleMarkdownInput(value);
     }
   });
+
+  const setDatePopoverVisibility = (open: boolean) => {
+    state = { ...state, datePopoverOpen: open };
+    datePopover.hidden = !open;
+    datePopover.style.display = open ? "flex" : "none";
+    dateTrigger.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+
+  const renderDateControls = () => {
+    const windowInfo = getDateWindow(state);
+    dateLabel.textContent = windowInfo.label;
+    mainContext.textContent = `Archive / ${windowInfo.label}`;
+
+    modeButtons.forEach((button) => {
+      const active = button.dataset.mode === state.dateMode;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+  };
+
+  const renderDatePopover = () => {
+    if (!state.datePopoverOpen) {
+      setDatePopoverVisibility(false);
+      return;
+    }
+
+    const windowInfo = getDateWindow(state);
+    const dayValue = toDayKey(state.anchorDate);
+
+    if (state.dateMode === "range") {
+      datePopover.innerHTML = `
+        <p class="files-date-popover-title">Select range</p>
+        <label class="files-date-input-wrap">
+          <span>From</span>
+          <input type="date" data-testid="files-range-from" value="${state.rangeFrom}" />
+        </label>
+        <label class="files-date-input-wrap">
+          <span>To</span>
+          <input type="date" data-testid="files-range-to" value="${state.rangeTo}" />
+        </label>
+      `;
+    } else {
+      datePopover.innerHTML = `
+        <p class="files-date-popover-title">Select date</p>
+        <label class="files-date-input-wrap">
+          <span>Date</span>
+          <input type="date" data-testid="files-day-input" value="${dayValue}" />
+        </label>
+        <p class="files-date-popover-hint">Range: ${windowInfo.chipLabel}</p>
+      `;
+    }
+
+    setDatePopoverVisibility(true);
+  };
 
   const renderMeta = () => {
     const selected = state.docs.find((doc) => doc.id === state.selectedId);
@@ -240,6 +455,10 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
     setTagsPickerVisibility(false);
   };
 
+  const closeDatePopover = () => {
+    setDatePopoverVisibility(false);
+  };
+
   const renderList = () => {
     const term = state.search.trim().toLowerCase();
     const docs = term
@@ -264,7 +483,7 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
         .join("");
       button.innerHTML = `
         <div class="files-list-row">
-          <span class="files-list-title">${doc.title || "Untitled note"}</span>
+          <span class="files-list-title">${truncateWithDots(doc.title || "Untitled note", TITLE_MAX_CHARS)}</span>
           <span class="files-list-time">${formatTime(doc.updatedAt)}</span>
         </div>
         <p class="files-list-snippet">${getSnippet(doc.markdown)}</p>
@@ -289,23 +508,34 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
   };
 
   const refresh = async () => {
-    const [docs, tags] = await Promise.all([service.getDocs(), service.getTags()]);
+    const windowInfo = getDateWindow(state);
+    const [docs, tags] = await Promise.all([
+      service.getDocsByDayRange(toDayKey(windowInfo.start), toDayKey(windowInfo.end)),
+      service.getTags()
+    ]);
+    const sorted = sortDocs(docs);
+    const hasSelected = sorted.some((doc) => doc.id === state.selectedId);
     state = {
       ...state,
-      docs: sortDocs(docs),
-      tags
+      docs: sorted,
+      tags,
+      selectedId: hasSelected ? state.selectedId : sorted[0]?.id ?? null
     };
-    if (!state.selectedId && docs.length > 0) {
-      updateSelection(docs[0]?.id ?? null);
-    } else {
-      renderList();
-      renderMeta();
-      renderTagsPicker();
-    }
+    service.setSelectedId(state.selectedId);
+    const selected = state.docs.find((doc) => doc.id === state.selectedId);
+    titleInput.value = selected?.title ?? "";
+    editor.setValue(selected?.markdown ?? "");
+    renderDateControls();
+    renderDatePopover();
+    renderList();
+    renderMeta();
+    renderTagsPicker();
   };
 
   const createDoc = async (title: string, markdown: string) => {
-    const doc = await service.createDoc(title, markdown);
+    const windowInfo = getDateWindow(state);
+    const dayKey = toDayKey(windowInfo.end);
+    const doc = await service.createDoc(title, markdown, dayKey);
     state = {
       ...state,
       docs: sortDocs([doc, ...state.docs])
@@ -321,7 +551,8 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
     state = { ...state, isCreatingDoc: true };
     const title = seed.title?.trim() || "Untitled note";
     const markdown = seed.markdown ?? editor.getValue();
-    const doc = await service.createDoc(title, markdown);
+    const windowInfo = getDateWindow(state);
+    const doc = await service.createDoc(title, markdown, toDayKey(windowInfo.end));
     state = {
       ...state,
       isCreatingDoc: false,
@@ -472,6 +703,45 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
     URL.revokeObjectURL(url);
   };
 
+  const shiftCurrentRange = (direction: -1 | 1) => {
+    if (state.dateMode === "day") {
+      state = { ...state, anchorDate: addDays(state.anchorDate, direction) };
+      return;
+    }
+
+    if (state.dateMode === "week") {
+      state = { ...state, anchorDate: addDays(state.anchorDate, direction * 7) };
+      return;
+    }
+
+    if (state.dateMode === "month") {
+      const next = new Date(
+        state.anchorDate.getFullYear(),
+        state.anchorDate.getMonth() + direction,
+        1
+      );
+      state = { ...state, anchorDate: next };
+      return;
+    }
+
+    const from = parseDayKey(state.rangeFrom);
+    const to = parseDayKey(state.rangeTo);
+    if (!from || !to) {
+      return;
+    }
+    const start = from <= to ? from : to;
+    const end = from <= to ? to : from;
+    const span = Math.max(1, Math.round((end.getTime() - start.getTime()) / DAY_MS) + 1);
+    const nextStart = addDays(start, direction * span);
+    const nextEnd = addDays(end, direction * span);
+    state = {
+      ...state,
+      rangeFrom: toDayKey(nextStart),
+      rangeTo: toDayKey(nextEnd),
+      anchorDate: nextEnd
+    };
+  };
+
   searchInput.addEventListener("input", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLInputElement)) {
@@ -505,6 +775,76 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
 
   newButton.addEventListener("click", () => {
     void createDoc("Untitled note", "");
+  });
+
+  datePrev.addEventListener("click", () => {
+    shiftCurrentRange(-1);
+    void refresh();
+  });
+
+  dateNext.addEventListener("click", () => {
+    shiftCurrentRange(1);
+    void refresh();
+  });
+
+  dateTrigger.addEventListener("click", () => {
+    const next = !state.datePopoverOpen;
+    setDatePopoverVisibility(next);
+    if (next) {
+      renderDatePopover();
+    }
+  });
+
+  modeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const mode = button.dataset.mode as DateMode | undefined;
+      if (!mode || mode === state.dateMode) {
+        return;
+      }
+      const updates: Partial<FilesState> = {
+        dateMode: mode,
+        datePopoverOpen: mode === "range"
+      };
+      if (mode === "range") {
+        const anchorKey = toDayKey(state.anchorDate);
+        updates.rangeFrom = state.rangeFrom || anchorKey;
+        updates.rangeTo = state.rangeTo || anchorKey;
+      }
+      state = { ...state, ...updates };
+      void refresh();
+    });
+  });
+
+  datePopover.addEventListener("input", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) {
+      return;
+    }
+    if (target.dataset.testid === "files-day-input") {
+      const parsed = parseDayKey(target.value);
+      if (!parsed) {
+        return;
+      }
+      state = {
+        ...state,
+        anchorDate: parsed,
+        rangeFrom: target.value,
+        rangeTo: target.value
+      };
+      void refresh();
+      return;
+    }
+
+    if (target.dataset.testid === "files-range-from") {
+      state = { ...state, rangeFrom: target.value };
+      void refresh();
+      return;
+    }
+
+    if (target.dataset.testid === "files-range-to") {
+      state = { ...state, rangeTo: target.value };
+      void refresh();
+    }
   });
 
   tagsButton.addEventListener("click", () => {
@@ -564,29 +904,45 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
     state = { ...state, tagDraft: target.value, isCreatingTag: true };
   });
 
-  tagsPicker.addEventListener("blur", (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement)) {
-      return;
-    }
-    state = { ...state, tagDraft: target.value, isCreatingTag: true };
-    void addTag(target.value);
-  }, true);
+  tagsPicker.addEventListener(
+    "blur",
+    (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) {
+        return;
+      }
+      state = { ...state, tagDraft: target.value, isCreatingTag: true };
+      void addTag(target.value);
+    },
+    true
+  );
 
   const handleDocumentPointer = (event: PointerEvent) => {
-    if (!state.tagPickerOpen) {
-      return;
-    }
     const path = event.composedPath();
-    const isInside = path.includes(tagsPicker) || path.includes(tagsButton);
-    if (!isInside) {
-      closeTagsPicker();
+
+    if (state.tagPickerOpen) {
+      const isInsideTag = path.includes(tagsPicker) || path.includes(tagsButton);
+      if (!isInsideTag) {
+        closeTagsPicker();
+      }
+    }
+
+    if (state.datePopoverOpen) {
+      const isInsideDate = path.includes(datePopover) || path.includes(dateTrigger);
+      if (!isInsideDate) {
+        closeDatePopover();
+      }
     }
   };
 
   const handleDocumentKey = (event: KeyboardEvent) => {
-    if (event.key === "Escape" && state.tagPickerOpen) {
-      closeTagsPicker();
+    if (event.key === "Escape") {
+      if (state.tagPickerOpen) {
+        closeTagsPicker();
+      }
+      if (state.datePopoverOpen) {
+        closeDatePopover();
+      }
     }
   };
 
@@ -601,6 +957,8 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
 
   void refresh();
   updateSelection(state.selectedId);
+  renderDateControls();
+  renderDatePopover();
   renderMeta();
   renderTagsPicker();
 };

@@ -41,6 +41,43 @@ const seedDoc = async (dbName: string, doc: {
 };
 
 describe("docs offline workflow", () => {
+  it("changes day using date switcher arrows", async () => {
+    const dbName = createDbName();
+    const day = new Date(2026, 1, 14);
+    const previousDay = new Date(2026, 1, 13);
+
+    await seedDoc(dbName, {
+      dayKey: getLocalDayKey(day),
+      title: "Today Note",
+      markdown: "Current day"
+    });
+    await seedDoc(dbName, {
+      dayKey: getLocalDayKey(previousDay),
+      title: "Previous Note",
+      markdown: "Previous day"
+    });
+
+    const root = createRoot();
+    mountFilesView(root, { dbName, dayKey: getLocalDayKey(day), debounceMs: 10 });
+    await delay(20);
+
+    const items = root.querySelectorAll('[data-testid^="doc-item-"]');
+    expect(items).toHaveLength(1);
+    expect(items[0]?.textContent).toContain("Today Note");
+
+    const prevButton = root.querySelector<HTMLButtonElement>(
+      '[data-testid="files-date-prev"]'
+    );
+    prevButton?.click();
+    await delay(20);
+
+    const prevItems = root.querySelectorAll('[data-testid^="doc-item-"]');
+    expect(prevItems).toHaveLength(1);
+    expect(prevItems[0]?.textContent).toContain("Previous Note");
+
+    await deleteDB(dbName);
+  });
+
   it("only renders docs for today", async () => {
     const dbName = createDbName();
     const today = getLocalDayKey();

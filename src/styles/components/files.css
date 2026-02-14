@@ -20,9 +20,9 @@
 .files-aside-header {
   padding: 24px 24px 12px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
 }
 
 .files-title {
@@ -35,7 +35,96 @@
   letter-spacing: 0.2em;
   font-size: 10px;
   color: rgba(148, 163, 184, 0.8);
-  margin: 0 0 6px;
+  margin: 0;
+}
+
+.files-date-switcher {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.files-date-trigger {
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.35);
+  color: var(--color-text-title);
+  padding: 8px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.files-mode-segment {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.files-mode-btn {
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(30, 41, 59, 0.35);
+  color: rgba(226, 232, 240, 0.9);
+  font-size: 11px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.files-mode-btn.is-active {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(37, 99, 235, 0.22);
+}
+
+.files-date-popover {
+  position: absolute;
+  top: 126px;
+  left: 24px;
+  right: 24px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.95);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.35);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 8;
+}
+
+.files-date-popover-title {
+  margin: 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(148, 163, 184, 0.9);
+}
+
+.files-date-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.files-date-input-wrap input {
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(30, 41, 59, 0.65);
+  color: rgba(226, 232, 240, 0.95);
+  padding: 8px;
+  font-size: 12px;
+}
+
+.files-date-popover-hint {
+  margin: 0;
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.85);
 }
 
 .files-search {
@@ -108,9 +197,14 @@
   font-size: 14px;
 }
 
+.files-list-title {
+  min-width: 0;
+}
+
 .files-list-time {
   font-size: 11px;
   color: rgba(148, 163, 184, 0.9);
+  white-space: nowrap;
 }
 
 .files-list-snippet {
@@ -118,6 +212,8 @@
   font-size: 12px;
   color: rgba(148, 163, 184, 0.9);
   line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .files-tag {
@@ -494,6 +590,10 @@
     min-width: 0;
     border-right: none;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .files-date-popover {
+    position: static;
   }
 
   .files-main {

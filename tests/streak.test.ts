@@ -87,6 +87,43 @@ describe("streak service", () => {
     await service.close();
     await deleteDB(dbName);
   });
+
+  it("does not count retroactive notes or docs as streak activity", async () => {
+    const dbName = `cozyfocus-streak-${crypto.randomUUID()}`;
+    const today = dayKeyWithOffset(0);
+    const yesterday = dayKeyWithOffset(-1);
+    const twoDaysAgo = dayKeyWithOffset(-2);
+
+    await seedSession(dbName, twoDaysAgo);
+
+    const db = await openCozyDB(dbName);
+    const now = Date.now();
+    await db.put("notes", {
+      id: crypto.randomUUID(),
+      dayKey: yesterday,
+      content: "Backfilled note",
+      createdAt: now,
+      updatedAt: now
+    });
+    await db.put("docs", {
+      id: crypto.randomUUID(),
+      dayKey: yesterday,
+      title: "Backfilled doc",
+      markdown: "retroactive content",
+      tags: [],
+      createdAt: now,
+      updatedAt: now
+    });
+    db.close();
+
+    const service = createStreakService({ dbName });
+    const info = await service.getStreakInfo(today);
+
+    expect(info).toEqual({ count: 0, todayCompleted: false });
+
+    await service.close();
+    await deleteDB(dbName);
+  });
 });
 
 describe("streak badge", () => {
