@@ -1,6 +1,14 @@
 type ConfirmDeleteOptions = {
   onConfirm: () => void;
   onCancel: () => void;
+  title?: string;
+  showTitle?: boolean;
+  message?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  testIdPrefix?: string;
+  testId?: string;
+  confirmButtonClassName?: string;
 };
 
 type ConfirmDeleteHandle = {
@@ -10,29 +18,43 @@ type ConfirmDeleteHandle = {
 };
 
 export const createConfirmDeleteView = (options: ConfirmDeleteOptions): ConfirmDeleteHandle => {
+  const testIdPrefix = options.testIdPrefix ?? "delete";
+  const title = options.title ?? "Confirm delete";
+  const showTitle = options.showTitle ?? true;
+  const message =
+    options.message ??
+    "This will permanently remove tasks, notes, sessions, stats, docs, settings, and tags from this device.";
+  const confirmLabel = options.confirmLabel ?? "Confirm Delete";
+  const cancelLabel = options.cancelLabel ?? "Cancel";
+  const confirmButtonClassName =
+    options.confirmButtonClassName ?? "settings-btn settings-btn--danger";
+
   const element = document.createElement("div");
   element.className = "settings-delete-confirm";
-  element.dataset.testid = "delete-confirmation";
+  element.dataset.testid = options.testId ?? `${testIdPrefix}-confirmation`;
   element.innerHTML = `
     <div class="settings-delete-copy">
-      <div class="settings-delete-title">Confirm delete</div>
+      ${showTitle ? `<div class="settings-delete-title">${title}</div>` : ""}
       <p class="settings-delete-text">
-        This will permanently remove tasks, notes, sessions, stats, docs, settings, and tags
-        from this device.
+        ${message}
       </p>
     </div>
     <div class="settings-delete-actions">
-      <button class="settings-btn settings-btn--danger" type="button" data-testid="delete-confirm">
-        Confirm Delete
+      <button class="${confirmButtonClassName}" type="button" data-testid="${testIdPrefix}-confirm">
+        ${confirmLabel}
       </button>
-      <button class="settings-btn" type="button" data-testid="delete-cancel">
-        Cancel
+      <button class="settings-btn" type="button" data-testid="${testIdPrefix}-cancel">
+        ${cancelLabel}
       </button>
     </div>
   `;
 
-  const confirmButton = element.querySelector<HTMLButtonElement>("[data-testid=\"delete-confirm\"]");
-  const cancelButton = element.querySelector<HTMLButtonElement>("[data-testid=\"delete-cancel\"]");
+  const confirmButton = element.querySelector<HTMLButtonElement>(
+    `[data-testid="${testIdPrefix}-confirm"]`
+  );
+  const cancelButton = element.querySelector<HTMLButtonElement>(
+    `[data-testid="${testIdPrefix}-cancel"]`
+  );
 
   const onConfirm = () => options.onConfirm();
   const onCancel = () => options.onCancel();

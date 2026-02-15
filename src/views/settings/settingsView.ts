@@ -432,7 +432,11 @@ export const mountSettingsView = (root: HTMLElement): void => {
           }
         })();
       };
-      deleteConfirmHandle = createConfirmDeleteView({ onCancel, onConfirm });
+      deleteConfirmHandle = createConfirmDeleteView({
+        onCancel,
+        onConfirm,
+        showTitle: false
+      });
       deletePanel.appendChild(deleteConfirmHandle.element);
     }
   };

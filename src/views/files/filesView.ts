@@ -3,6 +3,7 @@ import { getLocalDayKey } from "../../storage/dayKey";
 import { qs } from "../../ui/dom";
 import { createDocsService, type DocsService } from "../../features/docs/docsService";
 import { formatTimeForDisplay, readTimeFormatMode } from "../../features/time/timeFormat";
+import { createConfirmDeleteView } from "../../features/settings/confirmDeleteView";
 import type { TimeFormatMode } from "../../types";
 import { mountMarkdownEditor } from "./editor/editorView";
 
@@ -257,6 +258,17 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
         <div class="files-meta" data-testid="doc-meta"></div>
         <div class="files-editor-shell" data-testid="files-editor-shell"></div>
       </main>
+
+      <div class="settings-modal" data-testid="doc-delete-modal" hidden>
+        <div class="settings-modal-backdrop" data-testid="doc-delete-backdrop"></div>
+        <div class="settings-modal-dialog" role="dialog" aria-modal="true" aria-label="Delete note">
+          <button class="settings-modal-close" type="button" aria-label="Close delete note" data-testid="doc-delete-close">
+            ×
+          </button>
+          <div class="settings-modal-title">Delete Note</div>
+          <div class="settings-delete-panel" data-testid="doc-delete-panel"></div>
+        </div>
+      </div>
     </section>
   `;
 
@@ -268,6 +280,7 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
   const tagsPicker = qs<HTMLDivElement>(root, "doc-tags-picker");
   const newButton = qs<HTMLButtonElement>(root, "doc-new");
   const downloadButton = qs<HTMLButtonElement>(root, "doc-download");
+  const deleteButton = qs<HTMLButtonElement>(root, "doc-delete");
   const meta = qs<HTMLDivElement>(root, "doc-meta");
   const mainContext = qs<HTMLElement>(root, "files-main-context");
   const dateLabel = qs<HTMLElement>(root, "files-date-label");
@@ -275,6 +288,10 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
   const datePopover = qs<HTMLDivElement>(root, "files-date-popover");
   const datePrev = qs<HTMLButtonElement>(root, "files-date-prev");
   const dateNext = qs<HTMLButtonElement>(root, "files-date-next");
+  const deleteModal = qs<HTMLDivElement>(root, "doc-delete-modal");
+  const deleteBackdrop = qs<HTMLDivElement>(root, "doc-delete-backdrop");
+  const deleteClose = qs<HTMLButtonElement>(root, "doc-delete-close");
+  const deletePanel = qs<HTMLDivElement>(root, "doc-delete-panel");
   const modeButtons = root.querySelectorAll<HTMLButtonElement>("[data-mode]");
 
   const service = options.service ?? createDocsService({
@@ -464,6 +481,20 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
     setDatePopoverVisibility(false);
   };
 
+  const openDeleteModal = () => {
+    deleteModal.hidden = false;
+  };
+
+  const closeDeleteModal = () => {
+    deleteModal.hidden = true;
+  };
+
+  const syncDocActionButtons = () => {
+    const hasSelected = state.docs.some((doc) => doc.id === state.selectedId);
+    downloadButton.hidden = !hasSelected;
+    deleteButton.hidden = !hasSelected;
+  };
+
   const renderList = () => {
     const term = state.search.trim().toLowerCase();
     const docs = term
@@ -510,6 +541,7 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
     renderList();
     renderMeta();
     renderTagsPicker();
+    syncDocActionButtons();
   };
 
   const refresh = async () => {
@@ -535,6 +567,7 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
     renderList();
     renderMeta();
     renderTagsPicker();
+    syncDocActionButtons();
   };
 
   const createDoc = async (title: string, markdown: string) => {
@@ -690,6 +723,38 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
     renderList();
     updateSelection(state.selectedId);
     await service.deleteDoc(selected.id);
+  };
+
+  let deleteConfirmHandle: ReturnType<typeof createConfirmDeleteView> | null = null;
+
+  const ensureDeleteConfirmation = () => {
+    if (deleteConfirmHandle) {
+      return;
+    }
+    const onCancel = () => {
+      closeDeleteModal();
+    };
+    const onConfirm = () => {
+      deleteConfirmHandle?.setBusy(true);
+      void (async () => {
+        try {
+          await deleteDoc();
+          closeDeleteModal();
+        } finally {
+          deleteConfirmHandle?.setBusy(false);
+        }
+      })();
+    };
+    deleteConfirmHandle = createConfirmDeleteView({
+      onCancel,
+      onConfirm,
+      testIdPrefix: "doc-delete",
+      title: "Delete note",
+      showTitle: false,
+      message: "This note will be permanently removed from this device.",
+      confirmLabel: "Delete Note"
+    });
+    deletePanel.appendChild(deleteConfirmHandle.element);
   };
 
   const downloadDoc = () => {
@@ -942,6 +1007,10 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
 
   const handleDocumentKey = (event: KeyboardEvent) => {
     if (event.key === "Escape") {
+      if (!deleteModal.hidden) {
+        closeDeleteModal();
+        return;
+      }
       if (state.tagPickerOpen) {
         closeTagsPicker();
       }
@@ -955,9 +1024,15 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
   document.addEventListener("keydown", handleDocumentKey, true);
 
   downloadButton.addEventListener("click", downloadDoc);
-  const deleteButton = qs<HTMLButtonElement>(root, "doc-delete");
+  deleteClose.addEventListener("click", closeDeleteModal);
+  deleteBackdrop.addEventListener("click", closeDeleteModal);
   deleteButton.addEventListener("click", () => {
-    void deleteDoc();
+    const selected = state.docs.find((doc) => doc.id === state.selectedId);
+    if (!selected) {
+      return;
+    }
+    ensureDeleteConfirmation();
+    openDeleteModal();
   });
 
   void (async () => {
@@ -972,4 +1047,5 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
   renderDatePopover();
   renderMeta();
   renderTagsPicker();
+  syncDocActionButtons();
 };

@@ -267,6 +267,7 @@ export const renderApp = (root: HTMLElement): void => {
   let playerMounted = false;
   let playerMountPromise: Promise<void> | null = null;
   let playerDrawerOpen = false;
+  let enterAnimationTimer: number | null = null;
 
   const pomodoroBridge = createPomodoroBridge(sharedPomodoroRoot);
 
@@ -398,6 +399,34 @@ export const renderApp = (root: HTMLElement): void => {
     });
   };
 
+  const animateRouteEntry = () => {
+    if (enterAnimationTimer) {
+      window.clearTimeout(enterAnimationTimer);
+      enterAnimationTimer = null;
+    }
+
+    const animatedElements = [viewRoot, ...Array.from(viewRoot.querySelectorAll<HTMLElement>("*"))];
+    let index = 0;
+    animatedElements.forEach((element) => {
+      if (element.hasAttribute("hidden")) {
+        return;
+      }
+      element.classList.remove("view-enter");
+      element.style.removeProperty("--view-enter-delay");
+      element.style.setProperty("--view-enter-delay", `${Math.min(index, 20) * 14}ms`);
+      element.classList.add("view-enter");
+      index += 1;
+    });
+
+    enterAnimationTimer = window.setTimeout(() => {
+      animatedElements.forEach((element) => {
+        element.classList.remove("view-enter");
+        element.style.removeProperty("--view-enter-delay");
+      });
+      enterAnimationTimer = null;
+    }, 560);
+  };
+
   const renderRoute = (route: AppRoute) => {
     renderVersion += 1;
     currentRoute = route;
@@ -418,6 +447,7 @@ export const renderApp = (root: HTMLElement): void => {
       syncPlayerDock();
       playerCarrier.classList.remove("player-carrier--focus");
       mountFilesView(viewRoot);
+      animateRouteEntry();
       return;
     }
     if (route === "calendar") {
@@ -429,6 +459,7 @@ export const renderApp = (root: HTMLElement): void => {
       syncPlayerDock();
       playerCarrier.classList.remove("player-carrier--focus");
       mountCalendarView(viewRoot);
+      animateRouteEntry();
       return;
     }
     if (route === "settings") {
@@ -440,6 +471,7 @@ export const renderApp = (root: HTMLElement): void => {
       syncPlayerDock();
       playerCarrier.classList.remove("player-carrier--focus");
       mountSettingsView(viewRoot);
+      animateRouteEntry();
       return;
     }
 
@@ -455,6 +487,7 @@ export const renderApp = (root: HTMLElement): void => {
         return;
       }
       activeCleanups = cleanups;
+      animateRouteEntry();
     });
   };
 

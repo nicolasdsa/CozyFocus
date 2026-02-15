@@ -363,4 +363,57 @@ describe("docs offline workflow", () => {
     createObjectURL.mockRestore();
     revokeSpy.mockRestore();
   });
+
+  it("confirms before deleting a note", async () => {
+    const dbName = createDbName();
+    const dayKey = getLocalDayKey();
+    const seeded = await seedDoc(dbName, {
+      dayKey,
+      title: "Delete guard",
+      markdown: "Must confirm first"
+    });
+
+    const root = createRoot();
+    mountFilesView(root, { dbName, dayKey, debounceMs: 10 });
+    await waitFor(() => {
+      const hasDelete = Boolean(root.querySelector("[data-testid=\"doc-delete\"]"));
+      const hasActiveDoc = Boolean(root.querySelector<HTMLElement>(".files-list-item.is-active"));
+      return hasDelete && hasActiveDoc;
+    });
+
+    const deleteButton = root.querySelector<HTMLButtonElement>("[data-testid=\"doc-delete\"]");
+    deleteButton?.click();
+    await waitFor(() => Boolean(root.querySelector("[data-testid=\"doc-delete-confirm\"]")));
+
+    const modal = root.querySelector<HTMLDivElement>("[data-testid=\"doc-delete-modal\"]");
+    expect(modal?.hidden).toBe(false);
+
+    const dbBefore = await openCozyDB(dbName);
+    const beforeConfirm = await dbBefore.get("docs", seeded.id);
+    dbBefore.close();
+    expect(beforeConfirm).toBeTruthy();
+
+    const confirmButton = root.querySelector<HTMLButtonElement>(
+      "[data-testid=\"doc-delete-confirm\"]"
+    );
+    confirmButton?.click();
+
+    let deleted = false;
+    for (let attempt = 0; attempt < 80; attempt += 1) {
+      const db = await openCozyDB(dbName);
+      const record = await db.get("docs", seeded.id);
+      db.close();
+      if (!record) {
+        deleted = true;
+        break;
+      }
+      await delay(10);
+    }
+    expect(deleted).toBe(true);
+
+    const dbAfter = await openCozyDB(dbName);
+    const afterConfirm = await dbAfter.get("docs", seeded.id);
+    dbAfter.close();
+    expect(afterConfirm).toBeUndefined();
+  });
 });
