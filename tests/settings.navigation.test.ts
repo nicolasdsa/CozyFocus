@@ -13,10 +13,13 @@ const setup = () => {
   const navSettings = document.querySelector<HTMLButtonElement>(
     '[data-testid="nav-settings"]'
   );
-  if (!navSettings) {
-    throw new Error("Missing Settings nav button");
+  const navFocus = document.querySelector<HTMLButtonElement>('[data-testid="nav-focus"]');
+  const navCalendar = document.querySelector<HTMLButtonElement>('[data-testid="nav-calendar"]');
+  const navFiles = document.querySelector<HTMLButtonElement>('[data-testid="nav-files"]');
+  if (!navSettings || !navFocus || !navCalendar || !navFiles) {
+    throw new Error("Missing nav button");
   }
-  return { root, navSettings };
+  return { root, navSettings, navFocus, navCalendar, navFiles };
 };
 
 const waitForRoute = async () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -105,5 +108,108 @@ describe("settings navigation", () => {
     const persisted = await db.get("settings", "timeFormatPreference");
     db.close();
     expect(persisted).toMatchObject({ mode: "24h" });
+  });
+
+  it("keeps pomodoro/player active while settings is open", async () => {
+    const { navSettings, navFocus } = setup();
+    await waitFor(() => Boolean(document.querySelector('[data-testid="pomodoro-start"]')));
+
+    const startButton = document.querySelector<HTMLButtonElement>(
+      '[data-testid="pomodoro-start"]'
+    );
+    if (!startButton) {
+      throw new Error("Missing pomodoro start button");
+    }
+
+    startButton.click();
+    await waitFor(() => Boolean(startButton.disabled));
+
+    navSettings.click();
+    await waitFor(() => Boolean(document.querySelector('[data-testid="activity-dock"]')));
+
+    const dockToggle = document.querySelector<HTMLButtonElement>(
+      '[data-testid="activity-pomodoro-toggle"]'
+    );
+    const playerToggle = document.querySelector<HTMLButtonElement>(
+      '[data-testid="activity-player-toggle"]'
+    );
+    const dockTime = document.querySelector<HTMLElement>('[data-testid="activity-pomodoro-time"]');
+    if (!dockToggle || !playerToggle || !dockTime) {
+      throw new Error("Missing activity dock controls");
+    }
+
+    expect(dockTime.textContent).not.toBe("00:00");
+    expect(dockToggle.textContent).toBe("❚❚");
+
+    dockToggle.click();
+    await waitFor(() => dockToggle.textContent === "▶");
+
+    playerToggle.click();
+    await waitFor(() =>
+      Boolean(document.querySelector('[data-testid="activity-player-drawer"] [data-testid="player"]'))
+    );
+
+    navFocus.click();
+    await waitFor(() => Boolean(document.querySelector('[data-testid="pomodoro-start"]')));
+
+    const focusStart = document.querySelector<HTMLButtonElement>(
+      '[data-testid="pomodoro-start"]'
+    );
+    const focusPause = document.querySelector<HTMLButtonElement>(
+      '[data-testid="pomodoro-pause"]'
+    );
+    if (!focusStart || !focusPause) {
+      throw new Error("Missing focus pomodoro controls");
+    }
+
+    expect(focusStart.disabled).toBe(false);
+    expect(focusPause.disabled).toBe(true);
+  });
+
+  it("shows top compact dock on calendar and files", async () => {
+    const { navCalendar, navFiles, navFocus } = setup();
+    navCalendar.click();
+    await waitFor(() => Boolean(document.querySelector('[data-testid="activity-dock"]')));
+    const dock = document.querySelector<HTMLElement>('[data-testid="activity-dock"]');
+    expect(dock?.hidden).toBe(false);
+
+    navFiles.click();
+    await waitFor(() => Boolean(document.querySelector('[data-testid="activity-dock"]')));
+    expect(dock?.hidden).toBe(false);
+
+    navFocus.click();
+    await waitFor(() => Boolean(document.querySelector('[data-testid="activity-dock"]')));
+    expect(dock?.hidden).toBe(true);
+  });
+
+  it("reuses the same player iframe across route changes", async () => {
+    const { navCalendar, navSettings, navFiles } = setup();
+
+    navCalendar.click();
+    await waitFor(() => Boolean(document.querySelector('[data-testid="activity-player-toggle"]')));
+    const playerToggle = document.querySelector<HTMLButtonElement>(
+      '[data-testid="activity-player-toggle"]'
+    );
+    if (!playerToggle) {
+      throw new Error("Missing player toggle");
+    }
+
+    playerToggle.click();
+    await waitFor(() => Boolean(document.querySelector('[data-testid="player-embed"]')));
+    const firstEmbed = document.querySelector<HTMLElement>('[data-testid="player-embed"]');
+
+    navSettings.click();
+    await waitFor(() => Boolean(document.querySelector('[data-testid="player-embed"]')));
+    const secondEmbed = document.querySelector<HTMLElement>('[data-testid="player-embed"]');
+
+    navFiles.click();
+    await waitFor(() => Boolean(document.querySelector('[data-testid="player-embed"]')));
+    const thirdEmbed = document.querySelector<HTMLElement>('[data-testid="player-embed"]');
+
+    expect(firstEmbed).toBeTruthy();
+    expect(secondEmbed).toBeTruthy();
+    expect(thirdEmbed).toBeTruthy();
+    expect(secondEmbed).toBe(firstEmbed);
+    expect(thirdEmbed).toBe(firstEmbed);
   });
 });
