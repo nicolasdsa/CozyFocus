@@ -18,6 +18,7 @@ describe("layout", () => {
     expect(document.querySelector('[data-testid="task-queue"]')).toBeTruthy();
     expect(document.querySelector('[data-testid="pomodoro"]')).toBeTruthy();
     expect(document.querySelector('[data-testid="quick-notes"]')).toBeTruthy();
+    expect(document.querySelector('[data-testid="fullscreen-toggle"]')).toBeTruthy();
     expect(document.querySelector('[data-testid="player"]')).toBeTruthy();
   });
 });

@@ -1,6 +1,7 @@
 import type { NoteRecord } from "../../storage";
 import { getLocalDayKey } from "../../storage/dayKey";
 import { create, qs } from "../../ui/dom";
+import type { DeleteUndoRequest } from "../../ui/deleteUndo";
 import { createNotesService, type NotesService } from "./notesService";
 import type { NotesViewState } from "./notesTypes";
 
@@ -9,6 +10,7 @@ interface NotesViewOptions {
   dbName?: string;
   debounceMs?: number;
   service?: NotesService;
+  onRequestUndo?: (request: DeleteUndoRequest) => void;
 }
 
 export interface NotesViewHandle {
@@ -252,6 +254,13 @@ export const mountNotesView = async (
     const deleteButton = target.closest<HTMLButtonElement>(".trash-btn");
     if (deleteButton?.dataset.noteId) {
       const noteId = deleteButton.dataset.noteId;
+      const removedNote = state.notes.find((note) => note.id === noteId);
+      if (!removedNote) {
+        return;
+      }
+      const insertionIndex = state.notes.findIndex((note) => note.id === noteId);
+      const wasSelected = state.selectedId === noteId;
+      const wasEditing = state.editingId === noteId;
       const existingTimer = saveTimers.get(noteId);
       if (existingTimer) {
         window.clearTimeout(existingTimer);
@@ -274,6 +283,39 @@ export const mountNotesView = async (
         deletedTempIds.add(noteId);
         return;
       }
+
+      if (options.onRequestUndo) {
+        options.onRequestUndo({
+          message: "Nota removida",
+          onUndo: () => {
+            const alreadyPresent = state.notes.some((note) => note.id === removedNote.id);
+            if (alreadyPresent) {
+              return;
+            }
+            const nextNotes = [...state.notes];
+            const safeIndex = Math.max(0, Math.min(insertionIndex, nextNotes.length));
+            nextNotes.splice(safeIndex, 0, removedNote);
+            state = {
+              ...state,
+              notes: nextNotes,
+              selectedId: wasSelected ? removedNote.id : state.selectedId,
+              editingId: wasEditing ? removedNote.id : state.editingId
+            };
+            renderNotes();
+            if (wasEditing) {
+              focusEditor(removedNote.id);
+            }
+          },
+          onCommit: async () => {
+            const resolved = await resolveNoteId(noteId);
+            if (resolved) {
+              await service.deleteNote(resolved);
+            }
+          }
+        });
+        return;
+      }
+
       void (async () => {
         const resolved = await resolveNoteId(noteId);
         if (resolved) {

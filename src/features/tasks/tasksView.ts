@@ -1,12 +1,14 @@
 import type { TaskRecord } from "../../storage";
 import { getLocalDayKey } from "../../storage/dayKey";
 import { create, qs } from "../../ui/dom";
+import type { DeleteUndoRequest } from "../../ui/deleteUndo";
 import { createTasksService, type TasksService } from "./tasksService";
 
 interface TasksViewOptions {
   dayKey?: string;
   dbName?: string;
   service?: TasksService;
+  onRequestUndo?: (request: DeleteUndoRequest) => void;
 }
 
 export interface TasksViewHandle {
@@ -82,6 +84,15 @@ const renderTasks = (
     item.appendChild(trash);
 
     list.appendChild(item);
+  });
+};
+
+const sortTasksForView = (tasks: TaskRecord[]): TaskRecord[] => {
+  return [...tasks].sort((a, b) => {
+    if (a.completed !== b.completed) {
+      return a.completed ? 1 : -1;
+    }
+    return a.createdAt - b.createdAt;
   });
 };
 
@@ -355,9 +366,14 @@ export const mountTasksView = async (
   };
 
   const deleteTaskFromUi = (taskId: string) => {
+    const removedTask = tasks.find((task) => task.id === taskId);
+    if (!removedTask) {
+      return;
+    }
+    const wasCurrentFocus = currentFocusId === taskId;
     editingId = editingId === taskId ? null : editingId;
     tasks = tasks.filter((task) => task.id !== taskId);
-    if (currentFocusId === taskId) {
+    if (wasCurrentFocus) {
       currentFocusId = null;
       runSafely(async () => {
         await service.setCurrentFocus(dayKey, null);
@@ -368,6 +384,28 @@ export const mountTasksView = async (
       deletedTempIds.add(taskId);
       return;
     }
+
+    if (options.onRequestUndo) {
+      options.onRequestUndo({
+        message: `Task removida: ${removedTask.title}`,
+        onUndo: () => {
+          editingId = null;
+          tasks = sortTasksForView([...tasks, removedTask]);
+          if (wasCurrentFocus && !removedTask.completed) {
+            currentFocusId = removedTask.id;
+            runSafely(async () => {
+              await service.setCurrentFocus(dayKey, removedTask.id);
+            });
+          }
+          renderTasks(list, tasks, editingId, currentFocusId, waveTaskIds);
+        },
+        onCommit: async () => {
+          await service.deleteTask(taskId);
+        }
+      });
+      return;
+    }
+
     void service.deleteTask(taskId);
   };
 

@@ -403,12 +403,85 @@ button {
   filter: saturate(0.7);
 }
 
-.avatar {
+.fullscreen-btn {
   width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.5), rgba(148, 163, 184, 0.35));
+  min-width: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fullscreen-btn img {
+  width: 18px;
+  height: 18px;
+  display: block;
+  filter: brightness(0) invert(0.85);
+}
+
+.undo-toast-region {
+  position: absolute;
+  top: 76px;
+  left: calc(88px + (100% - 88px) / 2);
+  transform: translateX(-50%);
+  z-index: 9;
+  width: min(540px, calc(100vw - 132px));
+  pointer-events: none;
+}
+
+.undo-toast {
+  pointer-events: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  background: linear-gradient(90deg, rgba(10, 26, 58, 0.96), rgba(9, 23, 50, 0.93));
+  color: var(--color-text-title);
+  min-height: 52px;
+  padding: 9px 14px;
+  box-shadow: 0 14px 30px rgba(2, 6, 23, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  opacity: 0;
+}
+
+.undo-toast.is-visible {
+  animation: undo-toast-fade 5s linear forwards;
+}
+
+.undo-toast__message {
+  font-size: 13px;
+  color: rgba(241, 245, 249, 0.95);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.undo-toast__button {
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  background: rgba(37, 99, 235, 0.22);
+  color: var(--color-text-title);
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.undo-toast__button:hover {
+  background: rgba(37, 99, 235, 0.32);
+}
+
+@keyframes undo-toast-fade {
+  0% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .content {
@@ -759,7 +832,7 @@ button {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   padding: 12px 32px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
   align-items: center;
   background: rgba(15, 23, 42, 0.55);
@@ -825,7 +898,7 @@ button {
 }
 
 .player-embed {
-  width: 320px;
+  width: 100%;
   height: 80px;
   border-radius: 16px;
   display: flex;

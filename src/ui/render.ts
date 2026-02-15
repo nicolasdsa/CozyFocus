@@ -12,6 +12,8 @@ import { qs } from "./dom";
 import { mountFilesView } from "../views/files/filesView";
 import { mountCalendarView } from "../views/calendar/calendarView";
 import { mountSettingsView } from "../views/settings/settingsView";
+import { mountDeleteUndo } from "./deleteUndo";
+import fullscreenIconUrl from "../assets/fullscreen.svg";
 
 type CleanupTask = () => Promise<void> | void;
 type NavIcon = "coffee" | "calendar" | "article" | "settings";
@@ -102,9 +104,12 @@ const renderFocusView = async (
       <div class="header-status">
         <div class="streak-pill" data-testid="streak-badge"></div>
         <button class="stealth-btn" data-testid="stealth-toggle">Stealth</button>
-        <div class="avatar" aria-label="User avatar"></div>
+        <button class="stealth-btn fullscreen-btn" data-testid="fullscreen-toggle" aria-label="Entrar em tela cheia">
+          <img src="${fullscreenIconUrl}" alt="" aria-hidden="true" />
+        </button>
       </div>
     </header>
+    <div class="undo-toast-region" data-testid="undo-toast-region"></div>
 
     <main class="content">
       <aside class="card side-column" data-testid="task-queue"></aside>
@@ -115,6 +120,9 @@ const renderFocusView = async (
 
   const cleanups: CleanupTask[] = [];
   const stealthToggle = root.querySelector<HTMLButtonElement>('[data-testid="stealth-toggle"]');
+  const fullscreenToggle = root.querySelector<HTMLButtonElement>('[data-testid="fullscreen-toggle"]');
+  const undoToastRegion = qs<HTMLElement>(root, "undo-toast-region");
+  const undoDeleteHandle = mountDeleteUndo(undoToastRegion);
 
   if ("indexedDB" in globalThis) {
     const taskQueue = qs<HTMLElement>(root, "task-queue");
@@ -124,14 +132,54 @@ const renderFocusView = async (
 
     pomodoroSlot.appendChild(shared.pomodoroRoot);
 
-    const taskHandle = await mountTasksView(taskQueue);
-    const notesHandle = await mountNotesView(notesPanel);
+    const taskHandle = await mountTasksView(taskQueue, {
+      onRequestUndo: (request) => undoDeleteHandle.show(request)
+    });
+    const notesHandle = await mountNotesView(notesPanel, {
+      onRequestUndo: (request) => undoDeleteHandle.show(request)
+    });
     await shared.mountPomodoro();
     const streakHandle = await mountStreakView(streakBadge);
 
     cleanups.push(() => taskHandle.destroy());
     cleanups.push(() => notesHandle.destroy());
     cleanups.push(() => streakHandle.destroy());
+  }
+
+  cleanups.push(() => undoDeleteHandle.destroy());
+
+  if (fullscreenToggle) {
+    const rootEl = document.documentElement;
+    const supportsFullscreen = typeof rootEl.requestFullscreen === "function";
+    if (!supportsFullscreen) {
+      fullscreenToggle.disabled = true;
+      fullscreenToggle.setAttribute("aria-label", "Tela cheia indisponível");
+    } else {
+      const syncFullscreenButton = () => {
+        fullscreenToggle.setAttribute(
+          "aria-label",
+          document.fullscreenElement ? "Sair da tela cheia" : "Entrar em tela cheia"
+        );
+      };
+      const onFullscreenClick = () => {
+        if (document.fullscreenElement) {
+          void document.exitFullscreen();
+          return;
+        }
+        void rootEl.requestFullscreen();
+      };
+      const onFullscreenChange = () => {
+        syncFullscreenButton();
+      };
+
+      syncFullscreenButton();
+      fullscreenToggle.addEventListener("click", onFullscreenClick);
+      document.addEventListener("fullscreenchange", onFullscreenChange);
+      cleanups.push(() => {
+        fullscreenToggle.removeEventListener("click", onFullscreenClick);
+        document.removeEventListener("fullscreenchange", onFullscreenChange);
+      });
+    }
   }
 
   if (!stealthToggle) {

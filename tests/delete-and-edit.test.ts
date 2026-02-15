@@ -104,6 +104,62 @@ describe("delete and edit flows", () => {
     await deleteDB(dbName);
   });
 
+  it("supports undo callback for task deletion", async () => {
+    const dbName = createDbName("task-undo");
+    const dayKey = getLocalDayKey();
+    const root = createTasksRoot();
+    let pendingUndo:
+      | {
+          onUndo: () => void | Promise<void>;
+          onCommit: () => void | Promise<void>;
+        }
+      | null = null;
+
+    const view = await mountTasksView(root, {
+      dbName,
+      dayKey,
+      onRequestUndo: (request) => {
+        pendingUndo = request;
+      }
+    });
+
+    await addTaskViaUi(root, "Recover me");
+
+    const taskItem = root.querySelector<HTMLElement>('[data-testid^="task-item-"]');
+    if (!taskItem?.dataset.taskId) {
+      throw new Error("Missing task id");
+    }
+    const taskId = taskItem.dataset.taskId;
+
+    const deleteButton = root.querySelector<HTMLButtonElement>(
+      `[data-testid="task-delete-${taskId}"]`
+    );
+    if (!deleteButton) {
+      throw new Error("Missing task delete button");
+    }
+
+    deleteButton.click();
+    await flush();
+    expect(root.querySelector(`[data-testid="task-item-${taskId}"]`)).toBeNull();
+    expect(pendingUndo).toBeTruthy();
+
+    if (!pendingUndo) {
+      throw new Error("Missing undo payload");
+    }
+    await pendingUndo.onUndo();
+    await flush();
+
+    expect(root.querySelector(`[data-testid="task-item-${taskId}"]`)).toBeTruthy();
+    const db = await openCozyDB(dbName);
+    const tasks = await getTasksByDay(db, dayKey);
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0]?.id).toBe(taskId);
+    db.close();
+
+    await view.destroy();
+    await deleteDB(dbName);
+  });
+
   it("renames a task on double click and persists", async () => {
     const dbName = createDbName("task-edit");
     const dayKey = getLocalDayKey();
