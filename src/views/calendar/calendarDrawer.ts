@@ -1,6 +1,8 @@
 import type { DaySummary, TimelineItem } from "../../features/calendar/calendarService";
 import { create } from "../../ui/dom";
 
+type DrawerIconKind = TimelineItem["type"];
+
 const formatDrawerTitle = (date: Date): string =>
   date.toLocaleDateString([], {
     month: "long",
@@ -19,7 +21,27 @@ const formatLabel = (value: number, suffix: string): string => {
   return `${value}${suffix}`;
 };
 
+const iconMarkup = (kind: DrawerIconKind): string => {
+  if (kind === "focus") {
+    return `<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M482-80q-83 0-156-31.5T199-199q-54-54-86.5-127T80-482q0-83 31.5-156T199-765q54-54 127-86.5T482-884q83 0 156 31.5T765-765q54 54 86.5 127T884-482q0 83-31.5 156T765-199q-54 54-127 86.5T482-80Zm-2-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm40-200 126 126q11 11 28 11t28-11q11-11 11-28t-11-28L560-434v-206q0-17-11.5-28.5T520-680q-17 0-28.5 11.5T480-640v240q0 8 3 15.5t9 12.5l28 28Z"/></svg>`;
+  }
+  if (kind === "task") {
+    return `<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M440-600 280-760l56-56 104 104 184-184 56 56-240 240Zm0 320L280-440l56-56 104 104 184-184 56 56-240 240Zm200 40v-80h200v80H640Zm0-320v-80h200v80H640Z"/></svg>`;
+  }
+  if (kind === "file") {
+    return `<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M280-280h280v-80H280v80Zm0-160h400v-80H280v80Zm0-160h400v-80H280v80Zm-80 480q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/></svg>`;
+  }
+  return `<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/></svg>`;
+};
+
+const createIcon = (kind: DrawerIconKind, className: string): HTMLSpanElement => {
+  const icon = create<HTMLSpanElement>("span", className);
+  icon.innerHTML = iconMarkup(kind);
+  return icon;
+};
+
 const buildMetricCard = (
+  kind: DrawerIconKind,
   label: string,
   value: string,
   testId: string,
@@ -27,11 +49,12 @@ const buildMetricCard = (
 ): HTMLDivElement => {
   const card = create<HTMLDivElement>("div", `metric-card ${toneClass}`);
   card.dataset.testid = testId;
+  const icon = createIcon(kind, "metric-card__icon");
   const title = create<HTMLSpanElement>("span", "metric-card__label");
   title.textContent = label;
   const number = create<HTMLElement>("strong", "metric-card__value");
   number.textContent = value;
-  card.append(title, number);
+  card.append(icon, title, number);
   return card;
 };
 
@@ -40,8 +63,8 @@ const buildTimelineItem = (item: TimelineItem, index: number): HTMLLIElement => 
   entry.classList.add(`timeline--${item.type}`);
   entry.dataset.testid = `timeline-item-${index}`;
 
-  const dot = create<HTMLSpanElement>("span", "calendar-timeline__dot timeline-dot");
-  dot.classList.add(`dot--${item.type}`);
+  const icon = createIcon(item.type, "calendar-timeline__icon timeline-icon");
+  icon.classList.add(`icon--${item.type}`);
 
   const content = create<HTMLDivElement>("div", "calendar-timeline__content");
   const header = create<HTMLDivElement>("div", "calendar-timeline__header");
@@ -69,7 +92,7 @@ const buildTimelineItem = (item: TimelineItem, index: number): HTMLLIElement => 
     content.appendChild(tags);
   }
 
-  entry.append(dot, content);
+  entry.append(icon, content);
   return entry;
 };
 
@@ -95,24 +118,28 @@ export const renderCalendarDrawer = (
   const stats = create<HTMLDivElement>("div", "calendar-drawer__stats metric-grid");
   stats.append(
     buildMetricCard(
+      "focus",
       "Focused minutes",
       formatLabel(summary.focusMinutes, "m"),
       "drawer-metric-focus",
       "metric-card--focus"
     ),
     buildMetricCard(
+      "task",
       "Tasks",
       formatLabel(summary.tasksCount, ""),
       "drawer-metric-tasks",
       "metric-card--tasks"
     ),
     buildMetricCard(
+      "file",
       "Files",
       formatLabel(summary.filesCount, ""),
       "drawer-metric-files",
       "metric-card--files"
     ),
     buildMetricCard(
+      "note",
       "Quick notes",
       formatLabel(summary.notesCount, ""),
       "drawer-metric-notes",

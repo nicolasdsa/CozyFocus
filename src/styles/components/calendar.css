@@ -258,11 +258,18 @@
   font-weight: 500;
 }
 
-.cal-badge__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: currentColor;
+.cal-badge__icon {
+  width: 12px;
+  height: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cal-badge__icon svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
 }
 
 .cal-badge__text {
@@ -406,6 +413,18 @@
   text-transform: uppercase;
 }
 
+.metric-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.metric-card__icon svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
 .metric-card--focus {
   background: rgba(99, 102, 241, 0.12);
   border-color: rgba(99, 102, 241, 0.25);
@@ -448,7 +467,7 @@
 .timeline-list {
   list-style: none;
   margin: 0;
-  padding: 0 0 0 18px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -458,7 +477,7 @@
 .timeline-list::before {
   content: "";
   position: absolute;
-  left: 6px;
+  left: 8px;
   top: 4px;
   bottom: 4px;
   width: 1px;
@@ -468,41 +487,52 @@
 .calendar-timeline__item,
 .timeline-item {
   display: grid;
-  grid-template-columns: 16px 1fr;
-  gap: 12px;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
   align-items: flex-start;
   position: relative;
 }
 
-.calendar-timeline__dot,
-.timeline-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  margin-top: 6px;
-  background: rgba(148, 163, 184, 0.6);
-  box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.9);
+.calendar-timeline__icon,
+.timeline-icon {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(148, 163, 184, 0.9);
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9);
   z-index: 1;
 }
 
-.calendar-timeline__dot.dot--focus {
-  background: rgba(99, 102, 241, 0.9);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.18);
+.calendar-timeline__icon svg,
+.timeline-icon svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
 }
 
-.calendar-timeline__dot.dot--task {
-  background: rgba(16, 185, 129, 0.9);
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18);
+.calendar-timeline__icon.icon--focus {
+  color: rgba(199, 210, 254, 0.95);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.22);
 }
 
-.calendar-timeline__dot.dot--file {
-  background: rgba(245, 158, 11, 0.9);
-  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.18);
+.calendar-timeline__icon.icon--task {
+  color: rgba(167, 243, 208, 0.95);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.24);
 }
 
-.calendar-timeline__dot.dot--note {
-  background: rgba(244, 114, 182, 0.9);
-  box-shadow: 0 0 0 4px rgba(244, 114, 182, 0.18);
+.calendar-timeline__icon.icon--file {
+  color: rgba(253, 230, 138, 0.95);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.24);
+}
+
+.calendar-timeline__icon.icon--note {
+  color: rgba(251, 207, 232, 0.95);
+  box-shadow: 0 0 0 2px rgba(244, 114, 182, 0.24);
 }
 
 .calendar-timeline__header {
