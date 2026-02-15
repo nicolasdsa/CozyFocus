@@ -8,7 +8,12 @@ import {
   parseBundle,
   type MergePlan
 } from "../../features/settings/importData";
+import {
+  readTimeFormatMode,
+  saveTimeFormatMode
+} from "../../features/time/timeFormat";
 import type { ExportBundle } from "../../features/settings/exportData";
+import type { TimeFormatMode } from "../../types";
 
 const formatExportDate = (value: number): string => {
   return new Date(value).toISOString().slice(0, 10);
@@ -62,6 +67,26 @@ export const mountSettingsView = (root: HTMLElement): void => {
                 />
               </svg>
             </a>
+          </div>
+        </section>
+
+        <section class="settings-section card" data-testid="settings-time-format">
+          <div class="settings-section-header">
+            <span class="settings-caption">Time Format</span>
+          </div>
+          <p class="settings-text settings-muted">
+            Keep system default (Auto) or force 12h / 24h across calendar timeline and notes.
+          </p>
+          <div class="settings-actions" data-testid="time-format-actions">
+            <button class="settings-btn" type="button" data-testid="time-format-auto" data-time-format="auto">
+              Auto
+            </button>
+            <button class="settings-btn" type="button" data-testid="time-format-12h" data-time-format="12h">
+              12h
+            </button>
+            <button class="settings-btn" type="button" data-testid="time-format-24h" data-time-format="24h">
+              24h
+            </button>
           </div>
         </section>
 
@@ -165,6 +190,7 @@ export const mountSettingsView = (root: HTMLElement): void => {
   }
 
   const importButton = root.querySelector<HTMLButtonElement>("[data-testid=\"data-import\"]");
+  const timeFormatButtons = root.querySelectorAll<HTMLButtonElement>("[data-time-format]");
   const importTextarea = root.querySelector<HTMLTextAreaElement>("[data-testid=\"import-textarea\"]");
   const importPreview = root.querySelector<HTMLDivElement>("[data-testid=\"import-preview\"]");
   const importStatus = root.querySelector<HTMLDivElement>("[data-testid=\"import-status\"]");
@@ -214,6 +240,37 @@ export const mountSettingsView = (root: HTMLElement): void => {
         .join("")}
     `;
   };
+
+  const applyTimeFormatSelection = (mode: TimeFormatMode): void => {
+    timeFormatButtons.forEach((button) => {
+      const active = button.dataset.timeFormat === mode;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+  };
+
+  timeFormatButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const mode = button.dataset.timeFormat as TimeFormatMode | undefined;
+      if (!mode) {
+        return;
+      }
+      applyTimeFormatSelection(mode);
+      void saveTimeFormatMode(mode).catch((error) => {
+        console.error("Failed to save time format setting", error);
+      });
+    });
+  });
+
+  void (async () => {
+    try {
+      const mode = await readTimeFormatMode();
+      applyTimeFormatSelection(mode);
+    } catch (error) {
+      console.error("Failed to load time format setting", error);
+      applyTimeFormatSelection("auto");
+    }
+  })();
 
   const setStatus = (message: string, tone: "error" | "info" = "info"): void => {
     if (!importStatus) {

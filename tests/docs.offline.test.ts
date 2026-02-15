@@ -15,7 +15,7 @@ const createRoot = (): HTMLElement => {
 };
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const waitFor = async (check: () => boolean, attempts = 200, ms = 10) => {
+const waitFor = async (check: () => boolean, attempts = 500, ms = 10) => {
   for (let index = 0; index < attempts; index += 1) {
     if (check()) {
       return;
@@ -31,6 +31,8 @@ const seedDoc = async (dbName: string, doc: {
   title: string;
   markdown: string;
   tags?: string[];
+  createdAt?: number;
+  updatedAt?: number;
 }) => {
   const db = await openCozyDB(dbName);
   const now = Date.now();
@@ -40,12 +42,32 @@ const seedDoc = async (dbName: string, doc: {
     title: doc.title,
     markdown: doc.markdown,
     tags: doc.tags ?? [],
-    createdAt: now,
-    updatedAt: now
+    createdAt: doc.createdAt ?? now,
+    updatedAt: doc.updatedAt ?? now
   };
   await db.put("docs", record);
   db.close();
   return record;
+};
+
+const formatTime = (timestamp: number, hour12: boolean): string =>
+  new Date(timestamp).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12
+  });
+
+const saveTimeFormat = async (dbName: string, mode: "auto" | "12h" | "24h") => {
+  const db = await openCozyDB(dbName);
+  await db.put(
+    "settings",
+    {
+      mode,
+      updatedAt: Date.now()
+    },
+    "timeFormatPreference"
+  );
+  db.close();
 };
 
 describe("docs offline workflow", () => {
@@ -140,6 +162,38 @@ describe("docs offline workflow", () => {
 
   });
 
+  it("renders note times using the persisted 12h format", async () => {
+    const dbName = createDbName();
+    const baseDate = new Date(2026, 1, 14, 13, 5, 0, 0);
+    const dayKey = getLocalDayKey(baseDate);
+    const updatedAt = baseDate.getTime();
+    const createdAt = updatedAt - 60_000;
+
+    await saveTimeFormat(dbName, "12h");
+    await seedDoc(dbName, {
+      dayKey,
+      title: "Time format note",
+      markdown: "Time format body",
+      createdAt,
+      updatedAt
+    });
+
+    const root = createRoot();
+    mountFilesView(root, { dbName, dayKey, debounceMs: 10 });
+    await waitFor(() => {
+      const listTime = root.querySelector<HTMLElement>(".files-list-time");
+      const meta = root.querySelector<HTMLElement>("[data-testid=\"doc-meta\"]");
+      return Boolean(listTime?.textContent?.trim()) && Boolean(meta?.textContent?.trim());
+    });
+
+    const expectedTime = formatTime(updatedAt, true);
+    const listTime = root.querySelector<HTMLElement>(".files-list-time");
+    const meta = root.querySelector<HTMLElement>("[data-testid=\"doc-meta\"]");
+
+    expect(listTime?.textContent).toBe(expectedTime);
+    expect(meta?.textContent).toContain(expectedTime);
+  });
+
   it("autosaves markdown edits and restores on reload", async () => {
     const dbName = createDbName();
     const dayKey = getLocalDayKey();
@@ -189,7 +243,11 @@ describe("docs offline workflow", () => {
 
     const root = createRoot();
     mountFilesView(root, { dbName, dayKey, debounceMs: 10 });
-    await waitFor(() => Boolean(root.querySelector("[data-testid=\"doc-tags\"]")));
+    await waitFor(() => {
+      const tagsReady = Boolean(root.querySelector("[data-testid=\"doc-tags\"]"));
+      const selectedDoc = Boolean(root.querySelector<HTMLElement>(".files-list-item.is-active"));
+      return tagsReady && selectedDoc;
+    });
 
     const tagsButton = root.querySelector<HTMLButtonElement>("[data-testid=\"doc-tags\"]");
     tagsButton?.click();
@@ -232,7 +290,7 @@ describe("docs offline workflow", () => {
 
     expect(updated?.tags).toEqual([]);
 
-  });
+  }, 10000);
 
   it("downloads markdown with a .md filename", async () => {
     const dbName = createDbName();

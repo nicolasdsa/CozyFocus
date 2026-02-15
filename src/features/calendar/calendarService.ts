@@ -1,5 +1,6 @@
 import { openCozyDB } from "../../storage";
 import { getLocalDayKey } from "../../storage/dayKey";
+import { formatTimeForDisplay, getTimeFormatModeFromDb } from "../time/timeFormat";
 
 export type DaySummary = {
   dayKey: string;
@@ -89,15 +90,9 @@ export const getMonthSummary = async (
   return summaryMap;
 };
 
-const formatTimeLabel = (timestamp: number): string =>
-  new Date(timestamp).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  });
-
 export const getDayTimeline = async (dayKey: string): Promise<TimelineItem[]> => {
   const db = await openCozyDB();
+  const timeFormatMode = await getTimeFormatModeFromDb(db);
   const [sessions, tasks, docs, notes] = await Promise.all([
     db.getAllFromIndex("sessions", "dayKey", dayKey),
     db.getAllFromIndex("tasks", "dayKey", dayKey),
@@ -118,7 +113,7 @@ export const getDayTimeline = async (dayKey: string): Promise<TimelineItem[]> =>
       title: "Focus Session",
       description: `${minutes} minutes.`,
       time: session.endedAt,
-      timeLabel: formatTimeLabel(session.endedAt)
+      timeLabel: formatTimeForDisplay(session.endedAt, timeFormatMode)
     });
   });
 
@@ -128,7 +123,7 @@ export const getDayTimeline = async (dayKey: string): Promise<TimelineItem[]> =>
       type: "task",
       title: `Task Created: ${task.title}`,
       time: task.createdAt,
-      timeLabel: formatTimeLabel(task.createdAt)
+      timeLabel: formatTimeForDisplay(task.createdAt, timeFormatMode)
     });
 
     if (!task.completed) {
@@ -140,7 +135,7 @@ export const getDayTimeline = async (dayKey: string): Promise<TimelineItem[]> =>
       type: "task",
       title: `Task Completed: ${task.title}`,
       time: completedAt,
-      timeLabel: formatTimeLabel(completedAt)
+      timeLabel: formatTimeForDisplay(completedAt, timeFormatMode)
     });
   });
 
@@ -150,7 +145,7 @@ export const getDayTimeline = async (dayKey: string): Promise<TimelineItem[]> =>
       type: "file",
       title: `New File: ${doc.title}`,
       time: doc.createdAt,
-      timeLabel: formatTimeLabel(doc.createdAt),
+      timeLabel: formatTimeForDisplay(doc.createdAt, timeFormatMode),
       tags: doc.tags ?? []
     });
   });
@@ -162,7 +157,7 @@ export const getDayTimeline = async (dayKey: string): Promise<TimelineItem[]> =>
       title: "Quick Note Updated",
       description: note.content,
       time: note.updatedAt,
-      timeLabel: formatTimeLabel(note.updatedAt)
+      timeLabel: formatTimeForDisplay(note.updatedAt, timeFormatMode)
     });
   });
 

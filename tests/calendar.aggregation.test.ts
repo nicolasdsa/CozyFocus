@@ -24,6 +24,14 @@ const createRoot = (): HTMLElement => {
 };
 
 const flush = async () => new Promise((resolve) => setTimeout(resolve, 0));
+const waitFor = async (check: () => boolean, attempts = 40) => {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (check()) {
+      return;
+    }
+    await flush();
+  }
+};
 
 const seedDay = async (dayKey: string) => {
   const db = await openCozyDB(DB_NAME);
@@ -86,8 +94,9 @@ describe("calendar aggregation", () => {
     const root = createRoot();
     mountCalendarView(root);
 
-    await flush();
-    await flush();
+    await waitFor(() => {
+      return Boolean(document.querySelector(`[data-testid="badge-focus-${dayKey}"]`));
+    });
 
     const focusBadge = document.querySelector<HTMLElement>(
       `[data-testid=\"badge-focus-${dayKey}\"]`

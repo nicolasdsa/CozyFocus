@@ -2,6 +2,8 @@ import type { DocRecord, TagRecord } from "../../storage";
 import { getLocalDayKey } from "../../storage/dayKey";
 import { qs } from "../../ui/dom";
 import { createDocsService, type DocsService } from "../../features/docs/docsService";
+import { formatTimeForDisplay, readTimeFormatMode } from "../../features/time/timeFormat";
+import type { TimeFormatMode } from "../../types";
 import { mountMarkdownEditor } from "./editor/editorView";
 
 interface FilesViewOptions {
@@ -29,6 +31,7 @@ interface FilesState {
   rangeFrom: string;
   rangeTo: string;
   datePopoverOpen: boolean;
+  timeFormatMode: TimeFormatMode;
 }
 
 const TITLE_MAX_CHARS = 54;
@@ -43,9 +46,6 @@ const truncateWithDots = (value: string, maxChars: number): string => {
   }
   return trimmed.length > maxChars ? `${trimmed.slice(0, maxChars).trimEnd()}...` : trimmed;
 };
-
-const formatTime = (timestamp: number): string =>
-  new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 
 const formatDate = (timestamp: number): string =>
   new Date(timestamp).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
@@ -300,7 +300,12 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
     anchorDate: new Date(initialAnchor.getFullYear(), initialAnchor.getMonth(), initialAnchor.getDate()),
     rangeFrom: toDayKey(initialAnchor),
     rangeTo: toDayKey(initialAnchor),
-    datePopoverOpen: false
+    datePopoverOpen: false,
+    timeFormatMode: "auto"
+  };
+
+  const formatTime = (timestamp: number): string => {
+    return formatTimeForDisplay(timestamp, state.timeFormatMode);
   };
 
   const editor = mountMarkdownEditor(editorRoot, {
@@ -955,7 +960,13 @@ export const mountFilesView = (root: HTMLElement, options: FilesViewOptions = {}
     void deleteDoc();
   });
 
-  void refresh();
+  void (async () => {
+    state = {
+      ...state,
+      timeFormatMode: await readTimeFormatMode(options.dbName)
+    };
+    await refresh();
+  })();
   updateSelection(state.selectedId);
   renderDateControls();
   renderDatePopover();

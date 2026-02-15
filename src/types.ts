@@ -13,6 +13,13 @@ export type TaskFocusSetting = {
   updatedAt: number;
 };
 
+export type TimeFormatMode = "auto" | "12h" | "24h";
+
+export type TimeFormatSetting = {
+  mode: TimeFormatMode;
+  updatedAt: number;
+};
+
 export interface NoteEntry {
   id: string;
   content: string;

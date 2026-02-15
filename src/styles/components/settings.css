@@ -129,6 +129,12 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
+.settings-btn.is-active {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(37, 99, 235, 0.35);
+  color: #e0e7ff;
+}
+
 .settings-btn--primary {
   border-color: rgba(59, 130, 246, 0.4);
   background: rgba(37, 99, 235, 0.4);
