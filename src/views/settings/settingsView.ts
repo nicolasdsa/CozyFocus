@@ -14,6 +14,7 @@ import {
 } from "../../features/time/timeFormat";
 import type { ExportBundle } from "../../features/settings/exportData";
 import type { TimeFormatMode } from "../../types";
+import { appEvents } from "../../ui/appEvents";
 
 const formatExportDate = (value: number): string => {
   return new Date(value).toISOString().slice(0, 10);
@@ -423,6 +424,7 @@ export const mountSettingsView = (root: HTMLElement): void => {
           try {
             await clearAllStores();
             resetSettingsState();
+            appEvents.emit("dataChanged", { reason: "delete" });
             setDeleteStatus("All local data has been deleted.", "info");
           } catch (error) {
             console.error("Failed to delete local data", error);
@@ -488,6 +490,7 @@ export const mountSettingsView = (root: HTMLElement): void => {
         }
         try {
           const { plan } = await applyMergePlan(bundle);
+          appEvents.emit("dataChanged", { reason: "import" });
           importPreview.innerHTML = renderPlan(plan);
           const totalAdded =
             plan.tasks.add +

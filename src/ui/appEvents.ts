@@ -5,8 +5,13 @@ export interface SessionCompletedPayload {
   type: SessionType;
 }
 
+export interface DataChangedPayload {
+  reason: "delete" | "import";
+}
+
 type AppEventPayloads = {
   sessionCompleted: SessionCompletedPayload;
+  dataChanged: DataChangedPayload;
 };
 
 type AppEventHandler<K extends keyof AppEventPayloads> = (detail: AppEventPayloads[K]) => void;

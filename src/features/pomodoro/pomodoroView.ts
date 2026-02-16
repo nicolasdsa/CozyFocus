@@ -36,6 +36,7 @@ interface PomodoroViewOptions {
 
 export interface PomodoroViewHandle {
   refreshStats: () => Promise<void>;
+  resetFromStorage: () => Promise<void>;
   destroy: () => Promise<void>;
 }
 
@@ -411,6 +412,16 @@ export const mountPomodoroView = async (
 
   return {
     refreshStats: updateStats,
+    resetFromStorage: async () => {
+      defaults = await service.getDefaults();
+      engine.setDuration("focus", defaults.focus);
+      engine.setDuration("shortBreak", defaults.shortBreak);
+      engine.setDuration("longBreak", defaults.longBreak);
+      engine.setMode("focus");
+      engine.reset();
+      updateSnapshot(engine.getSnapshot());
+      await updateStats();
+    },
     destroy: async () => {
       stopVisibilityListener();
       unsubscribeTick();

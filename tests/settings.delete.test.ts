@@ -174,4 +174,75 @@ describe("settings delete data", () => {
     const status = document.querySelector<HTMLDivElement>("[data-testid=\"delete-status\"]");
     expect(status?.textContent?.toLowerCase()).toContain("deleted");
   });
+
+  it("resets pomodoro duration and media player state after confirm delete", async () => {
+    document.body.innerHTML = "<div id=\"app\"></div>";
+    const root = document.querySelector<HTMLDivElement>("#app");
+    if (!root) {
+      throw new Error("Missing #app root");
+    }
+    renderApp(root);
+
+    await waitFor(() => Boolean(document.querySelector('[data-testid="pomodoro-time"]')));
+    await waitFor(() => Boolean(document.querySelector('[data-testid="player-input"]')));
+
+    const pomodoroTime = document.querySelector<HTMLElement>('[data-testid="pomodoro-time"]');
+    const minutesEl = pomodoroTime?.querySelector<HTMLElement>('[data-role="minutes"]');
+    const secondsEl = pomodoroTime?.querySelector<HTMLElement>('[data-role="seconds"]');
+    if (!minutesEl || !secondsEl) {
+      throw new Error("Missing pomodoro duration fields");
+    }
+
+    minutesEl.textContent = "30";
+    secondsEl.textContent = "15";
+    minutesEl.dispatchEvent(new Event("blur"));
+    await waitForRoute();
+
+    const playerInput = document.querySelector<HTMLInputElement>('[data-testid="player-input"]');
+    const playerSave = document.querySelector<HTMLButtonElement>('[data-testid="player-save"]');
+    if (!playerInput || !playerSave) {
+      throw new Error("Missing player controls");
+    }
+    playerInput.value = "https://youtu.be/dQw4w9WgXcQ";
+    playerSave.click();
+    await waitFor(() => {
+      const status = document.querySelector<HTMLElement>('[data-testid="player-status"]');
+      return Boolean(status?.textContent?.toLowerCase().includes("playing"));
+    });
+
+    const navSettings = document.querySelector<HTMLButtonElement>('[data-testid="nav-settings"]');
+    if (!navSettings) {
+      throw new Error("Missing Settings nav button");
+    }
+    navSettings.click();
+    await waitForRoute();
+
+    const deleteButton = document.querySelector<HTMLButtonElement>('[data-testid="data-delete"]');
+    if (!deleteButton) {
+      throw new Error("Missing Delete Data button");
+    }
+    deleteButton.click();
+
+    const confirmButton = document.querySelector<HTMLButtonElement>(
+      "[data-testid=\"delete-confirm\"]"
+    );
+    confirmButton?.click();
+    await waitFor(() => {
+      const status = document.querySelector<HTMLDivElement>("[data-testid=\"delete-status\"]");
+      return Boolean(status?.textContent?.toLowerCase().includes("deleted"));
+    });
+
+    const navFocus = document.querySelector<HTMLButtonElement>('[data-testid="nav-focus"]');
+    if (!navFocus) {
+      throw new Error("Missing Focus nav button");
+    }
+    navFocus.click();
+    await waitForRoute();
+
+    expect(minutesEl.textContent).toBe("25");
+    expect(secondsEl.textContent).toBe("00");
+    expect(playerInput.value).toBe("");
+    const playerStatus = document.querySelector<HTMLElement>('[data-testid="player-status"]');
+    expect(playerStatus?.textContent).toContain("Ready");
+  });
 });

@@ -3,7 +3,7 @@ import {
   mountPomodoroView,
   type PomodoroViewHandle
 } from "../features/pomodoro/pomodoroView";
-import { mountPlayerView } from "../features/player/playerView";
+import { mountPlayerView, type PlayerViewHandle } from "../features/player/playerView";
 import { mountStealth } from "../features/stealth/stealth";
 import { mountStreakView } from "../features/streak/streakView";
 import { mountTasksView } from "../features/tasks/tasksView";
@@ -14,6 +14,7 @@ import { mountCalendarView } from "../views/calendar/calendarView";
 import { mountSettingsView } from "../views/settings/settingsView";
 import { mountDeleteUndo } from "./deleteUndo";
 import fullscreenIconUrl from "../assets/fullscreen.svg";
+import { appEvents } from "./appEvents";
 
 type CleanupTask = () => Promise<void> | void;
 type NavIcon = "coffee" | "calendar" | "article" | "settings";
@@ -24,6 +25,8 @@ interface PomodoroDockState {
   canResume: boolean;
   canPause: boolean;
 }
+
+let detachDataChangedListener: (() => void) | null = null;
 
 const navIconMarkup = (icon: NavIcon): string => {
   if (icon === "coffee") {
@@ -264,7 +267,7 @@ export const renderApp = (root: HTMLElement): void => {
   let currentRoute: AppRoute = "focus";
   let pomodoroHandle: PomodoroViewHandle | null = null;
   let pomodoroMountPromise: Promise<void> | null = null;
-  let playerMounted = false;
+  let playerHandle: PlayerViewHandle | null = null;
   let playerMountPromise: Promise<void> | null = null;
   let playerDrawerOpen = false;
   let enterAnimationTimer: number | null = null;
@@ -302,12 +305,12 @@ export const renderApp = (root: HTMLElement): void => {
       await pomodoroMountPromise;
     },
     mountPlayer: async () => {
-      if (playerMounted) {
+      if (playerHandle) {
         return;
       }
       if (!playerMountPromise) {
-        playerMountPromise = mountPlayerView(sharedPlayerRoot).then(() => {
-          playerMounted = true;
+        playerMountPromise = mountPlayerView(sharedPlayerRoot).then((handle) => {
+          playerHandle = handle;
         });
       }
       await playerMountPromise;
@@ -348,6 +351,20 @@ export const renderApp = (root: HTMLElement): void => {
       syncPlayerDock();
     });
   }
+
+  detachDataChangedListener?.();
+  detachDataChangedListener = appEvents.on("dataChanged", () => {
+    void (async () => {
+      if (hasIndexedDb) {
+        await shared.mountPomodoro();
+        await shared.mountPlayer();
+      }
+      await pomodoroHandle?.resetFromStorage();
+      await playerHandle?.reloadFromStorage();
+      syncPomodoroDock();
+      syncPlayerDock();
+    })();
+  });
 
   pomodoroToggle.addEventListener("click", () => {
     const state = pomodoroBridge.getState();

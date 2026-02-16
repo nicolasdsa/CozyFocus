@@ -11,6 +11,11 @@ interface PlayerViewOptions {
   adapters?: PlatformAdapter[];
 }
 
+export interface PlayerViewHandle {
+  reloadFromStorage: () => Promise<void>;
+  destroy: () => Promise<void>;
+}
+
 const buildPlaceholder = (message: string): HTMLElement => {
   const el = document.createElement("div");
   el.className = "player-placeholder";
@@ -28,7 +33,7 @@ const findAdapterById = (
 export const mountPlayerView = async (
   root: HTMLElement,
   options: PlayerViewOptions = {}
-): Promise<void> => {
+): Promise<PlayerViewHandle> => {
   root.innerHTML = `
     <div class="player-form">
       <div class="player-input-row">
@@ -45,6 +50,7 @@ export const mountPlayerView = async (
     <div class="player-embed" data-testid="player-embed"></div>
   `;
 
+  const ownsService = !options.service;
   const service =
     options.service ?? createPlayerService({ dbName: options.dbName, adapters: options.adapters });
   const adapters = options.adapters ?? ALL_ADAPTERS;
@@ -112,9 +118,21 @@ export const mountPlayerView = async (
     }
   });
 
-  const stored = await service.getSetting();
-  if (stored) {
-    input.value = stored.rawInput;
-  }
-  renderEmbed(stored);
+  const reloadFromStorage = async () => {
+    const stored = await service.getSetting();
+    input.value = stored?.rawInput ?? "";
+    renderEmbed(stored);
+  };
+
+  await reloadFromStorage();
+
+  return {
+    reloadFromStorage,
+    destroy: async () => {
+      if (ownsService) {
+        await service.close();
+      }
+      root.innerHTML = "";
+    }
+  };
 };
