@@ -9,6 +9,7 @@
 - https://cozyfocus.com/
 - https://cozyfocus.com/files
 - https://cozyfocus.com/calendar
+- https://cozyfocus.com/roadmap
 - https://cozyfocus.com/settings
 
 ## Summary

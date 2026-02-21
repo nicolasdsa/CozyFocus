@@ -1,4 +1,4 @@
-export type AppRoute = "focus" | "files" | "calendar" | "settings";
+export type AppRoute = "focus" | "files" | "calendar" | "roadmap" | "settings";
 
 type RouteHandler = (route: AppRoute) => void;
 
@@ -6,6 +6,7 @@ const ROUTE_PATHS: Record<AppRoute, string> = {
   focus: "/",
   files: "/files",
   calendar: "/calendar",
+  roadmap: "/roadmap",
   settings: "/settings"
 };
 
@@ -31,6 +32,9 @@ const parseRoute = (pathname: string): AppRoute => {
   }
   if (normalized === ROUTE_PATHS.calendar) {
     return "calendar";
+  }
+  if (normalized === ROUTE_PATHS.roadmap) {
+    return "roadmap";
   }
   if (normalized === ROUTE_PATHS.settings) {
     return "settings";

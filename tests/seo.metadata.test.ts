@@ -25,16 +25,19 @@ describe("seo metadata", () => {
     const navFocus = document.querySelector('[data-testid="nav-focus"]');
     const navCalendar = document.querySelector('[data-testid="nav-calendar"]');
     const navFiles = document.querySelector('[data-testid="nav-files"]');
+    const navRoadmap = document.querySelector('[data-testid="nav-roadmap"]');
     const navSettings = document.querySelector('[data-testid="nav-settings"]');
 
     expect(navFocus?.tagName).toBe("A");
     expect(navCalendar?.tagName).toBe("A");
     expect(navFiles?.tagName).toBe("A");
+    expect(navRoadmap?.tagName).toBe("A");
     expect(navSettings?.tagName).toBe("A");
 
     expect(navFocus?.getAttribute("href")).toBe("/");
     expect(navCalendar?.getAttribute("href")).toBe("/calendar");
     expect(navFiles?.getAttribute("href")).toBe("/files");
+    expect(navRoadmap?.getAttribute("href")).toBe("/roadmap");
     expect(navSettings?.getAttribute("href")).toBe("/settings");
   });
 

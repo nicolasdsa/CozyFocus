@@ -24,6 +24,11 @@ const ROUTE_SEO: Record<AppRoute, RouteSeo> = {
     description:
       "Review month, week, and day productivity signals including focus time, tasks, files, and notes activity."
   },
+  roadmap: {
+    title: `${BASE_TITLE} | Product Roadmap`,
+    description:
+      "Track what is planned, in progress, and done in the CozyFocus product roadmap."
+  },
   settings: {
     title: `${BASE_TITLE} | Settings and Data Controls`,
     description:
