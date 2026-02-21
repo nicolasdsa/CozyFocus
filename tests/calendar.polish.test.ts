@@ -90,7 +90,8 @@ describe("calendar polish", () => {
 
     const badge = document.querySelector<HTMLElement>(".cal-badge");
     expect(badge).toBeTruthy();
-    expect(badge?.querySelector(".cal-badge__dot")).toBeTruthy();
+    expect(badge?.querySelector(".cal-badge__icon")).toBeTruthy();
+    expect(badge?.querySelector(".cal-badge__text")).toBeTruthy();
 
     await deleteDB(DB_NAME);
   });
@@ -156,7 +157,7 @@ describe("calendar polish", () => {
     expect(metricCards.length).toBeGreaterThan(0);
 
     const timelineItem = document.querySelector<HTMLElement>(".timeline-item");
-    const timelineDot = document.querySelector<HTMLElement>(".timeline-dot");
+    const timelineDot = document.querySelector<HTMLElement>(".timeline-icon");
     expect(timelineItem).toBeTruthy();
     expect(timelineDot).toBeTruthy();
 

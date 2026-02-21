@@ -20,7 +20,7 @@ const setupSettings = async () => {
     throw new Error("Missing #app root");
   }
   renderApp(root);
-  const navSettings = document.querySelector<HTMLButtonElement>("[data-testid=\"nav-settings\"]");
+  const navSettings = document.querySelector<HTMLElement>("[data-testid=\"nav-settings\"]");
   if (!navSettings) {
     throw new Error("Missing Settings nav button");
   }
@@ -210,7 +210,7 @@ describe("settings delete data", () => {
       return Boolean(status?.textContent?.toLowerCase().includes("playing"));
     });
 
-    const navSettings = document.querySelector<HTMLButtonElement>('[data-testid="nav-settings"]');
+    const navSettings = document.querySelector<HTMLElement>('[data-testid="nav-settings"]');
     if (!navSettings) {
       throw new Error("Missing Settings nav button");
     }
@@ -232,12 +232,22 @@ describe("settings delete data", () => {
       return Boolean(status?.textContent?.toLowerCase().includes("deleted"));
     });
 
-    const navFocus = document.querySelector<HTMLButtonElement>('[data-testid="nav-focus"]');
+    const navFocus = document.querySelector<HTMLElement>('[data-testid="nav-focus"]');
     if (!navFocus) {
       throw new Error("Missing Focus nav button");
     }
     navFocus.click();
     await waitForRoute();
+
+    await waitFor(() => {
+      const playerStatus = document.querySelector<HTMLElement>('[data-testid="player-status"]');
+      return (
+        minutesEl.textContent === "25" &&
+        secondsEl.textContent === "00" &&
+        playerInput.value === "" &&
+        Boolean(playerStatus?.textContent?.includes("Ready"))
+      );
+    }, 50);
 
     expect(minutesEl.textContent).toBe("25");
     expect(secondsEl.textContent).toBe("00");

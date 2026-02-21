@@ -27,6 +27,20 @@ const createDbName = (prefix: string) => `cozyfocus-${prefix}-${crypto.randomUUI
 
 const flush = async () => new Promise((resolve) => setTimeout(resolve, 0));
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const waitForTaskId = async (root: HTMLElement, persisted = false): Promise<string> => {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const taskItem = root.querySelector<HTMLElement>('[data-testid^="task-item-"]');
+    const taskId = taskItem?.dataset.taskId;
+    if (taskId) {
+      if (!persisted || !taskId.startsWith("temp-")) {
+        return taskId;
+      }
+    }
+    await flush();
+  }
+  throw new Error("Timed out waiting for task id");
+};
+
 const waitForTaskTitle = async (
   dbName: string,
   dayKey: string,
@@ -125,11 +139,7 @@ describe("delete and edit flows", () => {
 
     await addTaskViaUi(root, "Recover me");
 
-    const taskItem = root.querySelector<HTMLElement>('[data-testid^="task-item-"]');
-    if (!taskItem?.dataset.taskId) {
-      throw new Error("Missing task id");
-    }
-    const taskId = taskItem.dataset.taskId;
+    const taskId = await waitForTaskId(root, true);
 
     const deleteButton = root.querySelector<HTMLButtonElement>(
       `[data-testid="task-delete-${taskId}"]`
