@@ -9,6 +9,10 @@ const ROUTE_PATHS: Record<AppRoute, string> = {
   settings: "/settings"
 };
 
+export const getRoutePath = (route: AppRoute): string => {
+  return ROUTE_PATHS[route];
+};
+
 const listeners = new Set<RouteHandler>();
 let currentRoute: AppRoute = "focus";
 let started = false;
@@ -83,7 +87,7 @@ export const subscribeRoute = (handler: RouteHandler): (() => void) => {
 
 export const navigateTo = (route: AppRoute): void => {
   ensureStarted();
-  const target = ROUTE_PATHS[route];
+  const target = getRoutePath(route);
   if (normalizePath(window.location.pathname) !== target) {
     window.history.pushState(null, "", target);
   }

@@ -221,9 +221,9 @@ export const mountSettingsView = (root: HTMLElement): void => {
     return `
       <div class="settings-import-preview-header">Preview</div>
       <div class="settings-import-preview-legend">
-        <span>Adicionar</span>
-        <span>Atualizar</span>
-        <span>Pular</span>
+        <span>Add</span>
+        <span>Update</span>
+        <span>Skip</span>
       </div>
       ${rows
         .map(

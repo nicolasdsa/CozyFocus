@@ -7,7 +7,7 @@ import { mountPlayerView, type PlayerViewHandle } from "../features/player/playe
 import { mountStealth } from "../features/stealth/stealth";
 import { mountStreakView } from "../features/streak/streakView";
 import { mountTasksView } from "../features/tasks/tasksView";
-import { navigateTo, subscribeRoute, type AppRoute } from "../router/router";
+import { getRoutePath, navigateTo, subscribeRoute, type AppRoute } from "../router/router";
 import { qs } from "./dom";
 import { mountFilesView } from "../views/files/filesView";
 import { mountCalendarView } from "../views/calendar/calendarView";
@@ -15,6 +15,7 @@ import { mountSettingsView } from "../views/settings/settingsView";
 import { mountDeleteUndo } from "./deleteUndo";
 import fullscreenIconUrl from "../assets/fullscreen.svg";
 import { appEvents } from "./appEvents";
+import { applyRouteSeo } from "../seo/routeSeo";
 
 type CleanupTask = () => Promise<void> | void;
 type NavIcon = "coffee" | "calendar" | "article" | "settings";
@@ -107,7 +108,7 @@ const renderFocusView = async (
       <div class="header-status">
         <div class="streak-pill" data-testid="streak-badge"></div>
         <button class="stealth-btn" data-testid="stealth-toggle">Stealth</button>
-        <button class="stealth-btn fullscreen-btn" data-testid="fullscreen-toggle" aria-label="Entrar em tela cheia">
+        <button class="stealth-btn fullscreen-btn" data-testid="fullscreen-toggle" aria-label="Enter fullscreen">
           <img src="${fullscreenIconUrl}" alt="" aria-hidden="true" />
         </button>
       </div>
@@ -156,12 +157,12 @@ const renderFocusView = async (
     const supportsFullscreen = typeof rootEl.requestFullscreen === "function";
     if (!supportsFullscreen) {
       fullscreenToggle.disabled = true;
-      fullscreenToggle.setAttribute("aria-label", "Tela cheia indisponível");
+      fullscreenToggle.setAttribute("aria-label", "Fullscreen unavailable");
     } else {
       const syncFullscreenButton = () => {
         fullscreenToggle.setAttribute(
           "aria-label",
-          document.fullscreenElement ? "Sair da tela cheia" : "Entrar em tela cheia"
+          document.fullscreenElement ? "Exit fullscreen" : "Enter fullscreen"
         );
       };
       const onFullscreenClick = () => {
@@ -198,26 +199,45 @@ export const renderApp = (root: HTMLElement): void => {
   root.innerHTML = `
     <div class="app-shell">
       <nav class="navbar" data-testid="nav">
-        <button
+        <a
           class="nav-btn nav-logo is-active"
           aria-label="Focus"
+          href="${getRoutePath("focus")}"
           data-route="focus"
           data-testid="nav-focus"
-          type="button"
+          aria-current="page"
         >
           <span class="nav-icon">${navIconMarkup("coffee")}</span>
-        </button>
+        </a>
         <div class="nav-list">
-          <button class="nav-btn" aria-label="Calendar" data-route="calendar" data-testid="nav-calendar">
+          <a
+            class="nav-btn"
+            aria-label="Calendar"
+            href="${getRoutePath("calendar")}"
+            data-route="calendar"
+            data-testid="nav-calendar"
+          >
             <span class="nav-icon">${navIconMarkup("calendar")}</span>
-          </button>
-          <button class="nav-btn" aria-label="Files (Archive)" data-route="files" data-testid="nav-files">
+          </a>
+          <a
+            class="nav-btn"
+            aria-label="Files (Archive)"
+            href="${getRoutePath("files")}"
+            data-route="files"
+            data-testid="nav-files"
+          >
             <span class="nav-icon">${navIconMarkup("article")}</span>
-          </button>
+          </a>
         </div>
-        <button class="nav-btn" aria-label="Settings" data-route="settings" data-testid="nav-settings">
+        <a
+          class="nav-btn"
+          aria-label="Settings"
+          href="${getRoutePath("settings")}"
+          data-route="settings"
+          data-testid="nav-settings"
+        >
           <span class="nav-icon">${navIconMarkup("settings")}</span>
-        </button>
+        </a>
       </nav>
 
       <section class="main-column" data-testid="view-root"></section>
@@ -243,7 +263,7 @@ export const renderApp = (root: HTMLElement): void => {
   `;
 
   const viewRoot = qs<HTMLElement>(root, "view-root");
-  const navButtons = root.querySelectorAll<HTMLButtonElement>("[data-route]");
+  const navButtons = root.querySelectorAll<HTMLElement>("[data-route]");
   const parking = qs<HTMLElement>(root, "view-parking");
   const dock = qs<HTMLElement>(root, "activity-dock");
   const pomodoroTime = qs<HTMLElement>(root, "activity-pomodoro-time");
@@ -410,8 +430,10 @@ export const renderApp = (root: HTMLElement): void => {
     navButtons.forEach((button) => {
       if (button.dataset.route === route) {
         button.classList.add("is-active");
+        button.setAttribute("aria-current", "page");
       } else {
         button.classList.remove("is-active");
+        button.removeAttribute("aria-current");
       }
     });
   };
@@ -449,6 +471,7 @@ export const renderApp = (root: HTMLElement): void => {
     currentRoute = route;
     const currentRenderVersion = renderVersion;
     setActiveNav(route);
+    applyRouteSeo(route);
     const tasks = activeCleanups;
     activeCleanups = [];
     void Promise.all(tasks.map(async (cleanup) => cleanup()));
@@ -509,11 +532,17 @@ export const renderApp = (root: HTMLElement): void => {
   };
 
   navButtons.forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", (event) => {
       const route = button.dataset.route as AppRoute | undefined;
       if (!route) {
         return;
       }
+      if (event instanceof MouseEvent) {
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+          return;
+        }
+      }
+      event.preventDefault();
       navigateTo(route);
     });
   });

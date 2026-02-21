@@ -1,0 +1,19 @@
+# CozyFocus
+
+> CozyFocus is an offline-first web app focused on deep work sessions, tasks, notes, and calendar insights.
+
+## Canonical URL
+- https://cozyfocus.com/
+
+## Crawlable Routes
+- https://cozyfocus.com/
+- https://cozyfocus.com/files
+- https://cozyfocus.com/calendar
+- https://cozyfocus.com/settings
+
+## Summary
+- Focus timer with session tracking.
+- Task queue for daily execution.
+- Quick notes and file archive for writing.
+- Calendar overview with productivity history.
+- Local-first data storage and import/export.

@@ -3,9 +3,65 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CozyFocus - Focus Home</title>
+    <title>CozyFocus | Focus Sessions, Tasks, Notes, and Calendar</title>
+    <meta
+      name="description"
+      content="CozyFocus is an offline-first focus workspace with Pomodoro sessions, tasks, quick notes, files, and calendar insights."
+    />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="canonical" href="/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CozyFocus" />
+    <meta property="og:title" content="CozyFocus | Focus Sessions, Tasks, Notes, and Calendar" />
+    <meta
+      property="og:description"
+      content="A calm, offline-first workspace to focus, track sessions, manage tasks, and keep notes organized."
+    />
+    <meta property="og:url" content="/" />
+    <meta property="og:image" content="/og-cover.svg" />
+    <meta property="og:image:alt" content="CozyFocus productivity workspace preview" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="CozyFocus | Focus Sessions, Tasks, Notes, and Calendar" />
+    <meta
+      name="twitter:description"
+      content="A calm, offline-first workspace to focus, track sessions, manage tasks, and keep notes organized."
+    />
+    <meta name="twitter:image" content="/og-cover.svg" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "CozyFocus",
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "Web",
+        "description": "Offline-first focus workspace with Pomodoro, task queue, notes, files, and calendar insights.",
+        "url": "/"
+      }
+    </script>
   </head>
   <body>
+    <noscript>
+      <main>
+        <h1>CozyFocus</h1>
+        <p>
+          CozyFocus is an offline-first workspace for focus sessions, tasks, notes, files, and
+          calendar tracking.
+        </p>
+        <nav aria-label="Primary">
+          <a href="/">Focus</a>
+          <a href="/files">Files</a>
+          <a href="/calendar">Calendar</a>
+          <a href="/settings">Settings</a>
+        </nav>
+      </main>
+    </noscript>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

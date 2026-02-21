@@ -1,0 +1,26 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A" />
+      <stop offset="1" stop-color="#1E293B" />
+    </linearGradient>
+    <linearGradient id="accent" x1="180" y1="160" x2="1020" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#34D399" stop-opacity="0.36" />
+      <stop offset="1" stop-color="#60A5FA" stop-opacity="0.12" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect x="80" y="80" width="1040" height="470" rx="28" fill="#0B1220" stroke="#334155" stroke-width="2" />
+  <rect x="140" y="148" width="920" height="334" rx="20" fill="url(#accent)" />
+
+  <text x="160" y="260" fill="#F8FAFC" font-family="Arial, sans-serif" font-size="78" font-weight="700">
+    CozyFocus
+  </text>
+  <text x="160" y="322" fill="#CBD5E1" font-family="Arial, sans-serif" font-size="34" font-weight="500">
+    Focus sessions, tasks, notes, and calendar.
+  </text>
+  <text x="160" y="386" fill="#94A3B8" font-family="Arial, sans-serif" font-size="28">
+    Offline-first productivity workspace
+  </text>
+</svg>
