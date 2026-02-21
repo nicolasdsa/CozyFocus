@@ -23,7 +23,7 @@ export const mountDeleteUndo = (
   root.innerHTML = `
     <div class="undo-toast" data-testid="undo-toast" hidden>
       <div class="undo-toast__message" data-testid="undo-toast-message"></div>
-      <button class="undo-toast__button" type="button" data-testid="undo-toast-action">Desfazer</button>
+      <button class="undo-toast__button" type="button" data-testid="undo-toast-action">Undo</button>
     </div>
   `;
 
@@ -78,7 +78,7 @@ export const mountDeleteUndo = (
     const currentToken = token;
     active = request;
     message.textContent = request.message;
-    action.textContent = request.undoLabel ?? "Desfazer";
+    action.textContent = request.undoLabel ?? "Undo";
 
     toast.hidden = false;
     toast.classList.remove("is-visible");

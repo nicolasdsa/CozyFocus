@@ -287,7 +287,7 @@ export const mountSettingsView = (root: HTMLElement): void => {
     }
     importPreview.innerHTML = `
       <div class="settings-import-preview-placeholder">
-        Cole um export do CozyFocus para ver o preview.
+        Paste a CozyFocus export to preview it.
       </div>
     `;
   };

@@ -286,7 +286,7 @@ export const mountNotesView = async (
 
       if (options.onRequestUndo) {
         options.onRequestUndo({
-          message: "Nota removida",
+          message: "Note removed",
           onUndo: () => {
             const alreadyPresent = state.notes.some((note) => note.id === removedNote.id);
             if (alreadyPresent) {

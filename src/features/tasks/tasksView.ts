@@ -387,7 +387,7 @@ export const mountTasksView = async (
 
     if (options.onRequestUndo) {
       options.onRequestUndo({
-        message: `Task removida: ${removedTask.title}`,
+        message: `Task removed: ${removedTask.title}`,
         onUndo: () => {
           editingId = null;
           tasks = sortTasksForView([...tasks, removedTask]);
