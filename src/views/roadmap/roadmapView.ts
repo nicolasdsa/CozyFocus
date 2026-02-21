@@ -7,7 +7,7 @@ interface RoadmapCard {
   };
 }
 
-type RoadmapTagVariant = "core" | "feature" | "design" | "marketing" | "analytics";
+type RoadmapTagVariant = "core" | "feature" | "design" | "marketing" | "analytics" | "integration";
 
 interface RoadmapColumn {
   id: "planned" | "progress" | "done";
@@ -20,6 +20,24 @@ const ROADMAP_COLUMNS: RoadmapColumn[] = [
     id: "planned",
     title: "Planned",
     cards: [
+      {
+        title: "Share streaks to Instagram Stories",
+        description:
+          "Generate a polished story-ready card so you can share your current streak on Instagram in one tap.",
+        tag: {
+          label: "Integration",
+          variant: "integration"
+        }
+      },
+      {
+        title: "Markdown notes editor improvements",
+        description:
+          "Refine the writing experience with smarter toolbar actions, stronger shortcuts, and a cleaner preview flow.",
+        tag: {
+          label: "Feature",
+          variant: "feature"
+        }
+      },
       {
         title: "Dynamic and fixed background update",
         description: "Visual and behavior refresh for dynamic and static backgrounds.",

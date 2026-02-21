@@ -178,6 +178,12 @@
   background: rgba(37, 99, 235, 0.2);
 }
 
+.roadmap-tag--integration {
+  color: rgba(196, 181, 253, 0.98);
+  border-color: rgba(129, 140, 248, 0.34);
+  background: rgba(99, 102, 241, 0.2);
+}
+
 .roadmap-card:hover {
   transform: translateY(-2px);
   border-color: rgba(59, 130, 246, 0.38);

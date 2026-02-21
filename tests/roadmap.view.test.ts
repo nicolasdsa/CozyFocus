@@ -62,13 +62,15 @@ describe("roadmap view", () => {
     const doneTitles = readCardTitles(done);
 
     expect(plannedTitles).toEqual([
+      "Share streaks to Instagram Stories",
+      "Markdown notes editor improvements",
       "Dynamic and fixed background update",
       "Pomodoro extension"
     ]);
     expect(progressTitles).toEqual(["Ambient sounds"]);
     expect(doneTitles).toEqual(["Version 1.0 completed"]);
 
-    expect(planned.querySelectorAll("[data-testid^='roadmap-card-']").length).toBe(2);
+    expect(planned.querySelectorAll("[data-testid^='roadmap-card-']").length).toBe(4);
     expect(progress.querySelectorAll("[data-testid^='roadmap-card-']").length).toBe(1);
     expect(done.querySelectorAll("[data-testid^='roadmap-card-']").length).toBe(1);
   });

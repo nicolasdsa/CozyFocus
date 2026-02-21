@@ -15,6 +15,7 @@ import {
 import type { ExportBundle } from "../../features/settings/exportData";
 import type { TimeFormatMode } from "../../types";
 import { appEvents } from "../../ui/appEvents";
+import arrowIconUrl from "../../assets/arrow.svg";
 
 const formatExportDate = (value: number): string => {
   return new Date(value).toISOString().slice(0, 10);
@@ -57,16 +58,7 @@ export const mountSettingsView = (root: HTMLElement): void => {
               aria-label="Open CozyFocus repository on GitHub"
             >
               <span>View Repo</span>
-              <svg viewBox="0 0 24 24" aria-hidden="true" class="settings-link-icon">
-                <path
-                  d="M7 17h10M7 17V7h10v10M9 7h8"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <img src="${arrowIconUrl}" alt="" aria-hidden="true" class="settings-link-icon" />
             </a>
           </div>
         </section>
