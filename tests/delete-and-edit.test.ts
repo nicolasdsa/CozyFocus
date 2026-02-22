@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
 import { describe, expect, it } from "vitest";
@@ -23,7 +24,7 @@ const createNotesRoot = (): HTMLElement => {
   return root;
 };
 
-const createDbName = (prefix: string) => `cozyfocus-${prefix}-${crypto.randomUUID()}`;
+const createDbName = (prefix: string) => `cozyfocus-${prefix}-${uuidv4()}`;
 
 const flush = async () => new Promise((resolve) => setTimeout(resolve, 0));
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -228,7 +229,7 @@ describe("delete and edit flows", () => {
 
     const db = await openCozyDB(dbName);
     const seeded = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey,
       content: "Keep it cozy",
       updatedAt: Date.now()

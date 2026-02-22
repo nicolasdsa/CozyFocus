@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
 import { afterEach, describe, expect, it } from "vitest";
@@ -37,7 +38,7 @@ afterEach(() => {
 
 describe("streak service", () => {
   it("counts consecutive days when today is completed", async () => {
-    const dbName = `cozyfocus-streak-${crypto.randomUUID()}`;
+    const dbName = `cozyfocus-streak-${uuidv4()}`;
     const today = dayKeyWithOffset(0);
     const yesterday = dayKeyWithOffset(-1);
     const twoDaysAgo = dayKeyWithOffset(-2);
@@ -56,7 +57,7 @@ describe("streak service", () => {
   });
 
   it("resets after a gap", async () => {
-    const dbName = `cozyfocus-streak-${crypto.randomUUID()}`;
+    const dbName = `cozyfocus-streak-${uuidv4()}`;
     const today = dayKeyWithOffset(0);
     const twoDaysAgo = dayKeyWithOffset(-2);
 
@@ -73,7 +74,7 @@ describe("streak service", () => {
   });
 
   it("returns 0 when today is empty and yesterday breaks the streak", async () => {
-    const dbName = `cozyfocus-streak-${crypto.randomUUID()}`;
+    const dbName = `cozyfocus-streak-${uuidv4()}`;
     const today = dayKeyWithOffset(0);
     const twoDaysAgo = dayKeyWithOffset(-2);
 
@@ -89,7 +90,7 @@ describe("streak service", () => {
   });
 
   it("does not count retroactive notes or docs as streak activity", async () => {
-    const dbName = `cozyfocus-streak-${crypto.randomUUID()}`;
+    const dbName = `cozyfocus-streak-${uuidv4()}`;
     const today = dayKeyWithOffset(0);
     const yesterday = dayKeyWithOffset(-1);
     const twoDaysAgo = dayKeyWithOffset(-2);
@@ -99,14 +100,14 @@ describe("streak service", () => {
     const db = await openCozyDB(dbName);
     const now = Date.now();
     await db.put("notes", {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey: yesterday,
       content: "Backfilled note",
       createdAt: now,
       updatedAt: now
     });
     await db.put("docs", {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey: yesterday,
       title: "Backfilled doc",
       markdown: "retroactive content",
@@ -128,7 +129,7 @@ describe("streak service", () => {
 
 describe("streak badge", () => {
   it("dims when user has streak but has not completed today", async () => {
-    const dbName = `cozyfocus-streak-${crypto.randomUUID()}`;
+    const dbName = `cozyfocus-streak-${uuidv4()}`;
     const today = dayKeyWithOffset(0);
     const yesterday = dayKeyWithOffset(-1);
     const twoDaysAgo = dayKeyWithOffset(-2);
@@ -157,7 +158,7 @@ describe("streak badge", () => {
   });
 
   it("updates on session completion", async () => {
-    const dbName = `cozyfocus-streak-${crypto.randomUUID()}`;
+    const dbName = `cozyfocus-streak-${uuidv4()}`;
     const today = dayKeyWithOffset(0);
     const yesterday = dayKeyWithOffset(-1);
 

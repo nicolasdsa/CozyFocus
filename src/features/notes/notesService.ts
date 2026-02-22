@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { openCozyDB, type NoteRecord } from "../../storage";
 import { getLocalDayKey } from "../../storage/dayKey";
 
@@ -32,7 +33,7 @@ export const createNotesService = (options?: { dbName?: string }): NotesService 
     const db = await dbPromise;
     const now = Date.now();
     const note: NoteRecord = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey: resolveDayKey(dayKey),
       content,
       updatedAt: now

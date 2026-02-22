@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
 import { describe, expect, it } from "vitest";
@@ -94,7 +95,7 @@ describe("calendar drawer", () => {
     });
 
     await db.put("tasks", {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey,
       title: "Plan meeting",
       completed: false,
@@ -104,7 +105,7 @@ describe("calendar drawer", () => {
     });
 
     await db.put("tasks", {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey,
       title: "Review pull request",
       completed: false,
@@ -114,7 +115,7 @@ describe("calendar drawer", () => {
     });
 
     await db.put("docs", {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey,
       title: "Sprint notes",
       markdown: "# Notes",
@@ -190,7 +191,7 @@ describe("calendar drawer", () => {
     });
 
     await db.put("docs", {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey,
       title: "Daily recap",
       markdown: "# Recap",
@@ -200,7 +201,7 @@ describe("calendar drawer", () => {
     });
 
     await db.put("tasks", {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey,
       title: "Send summary",
       completed: true,
@@ -210,7 +211,7 @@ describe("calendar drawer", () => {
     });
 
     await db.put("notes", {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey,
       content: "Capture blockers for tomorrow",
       updatedAt: noteUpdatedAt

@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
 import { describe, expect, it } from "vitest";
@@ -14,7 +15,7 @@ const createRoot = (): HTMLElement => {
 };
 
 const createDbName = (suffix: string) =>
-  `cozyfocus-tasks-ui-${suffix}-${crypto.randomUUID()}`;
+  `cozyfocus-tasks-ui-${suffix}-${uuidv4()}`;
 
 const flush = async () => new Promise((resolve) => setTimeout(resolve, 0));
 const waitFor = async (check: () => boolean, attempts = 20) => {
@@ -107,7 +108,7 @@ describe("tasks UI polish", () => {
     const dayKey = getLocalDayKey();
     const seededDb = await openCozyDB(dbName);
     await seededDb.put("tasks", {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey,
       title: "Checkbox styling",
       completed: false,

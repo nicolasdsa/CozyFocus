@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
 import { describe, expect, it, vi, afterEach } from "vitest";
@@ -50,7 +51,7 @@ describe("pomodoro", () => {
   });
 
   it("completing a session writes session record and updates stats", async () => {
-    const dbName = `cozyfocus-pomodoro-test-${crypto.randomUUID()}`;
+    const dbName = `cozyfocus-pomodoro-test-${uuidv4()}`;
     const service = createPomodoroService({ dbName });
 
     const now = Date.now();

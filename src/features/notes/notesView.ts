@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import type { NoteRecord } from "../../storage";
 import { getLocalDayKey } from "../../storage/dayKey";
 import { create, qs } from "../../ui/dom";
@@ -170,7 +171,7 @@ export const mountNotesView = async (
   const createNote = async () => {
     const now = Date.now();
     const tempNote: NoteRecord = {
-      id: `temp-${crypto.randomUUID()}`,
+      id: `temp-${uuidv4()}`,
       dayKey,
       content: "",
       updatedAt: now

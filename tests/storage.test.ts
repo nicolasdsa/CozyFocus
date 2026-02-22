@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import "fake-indexeddb/auto";
 import { describe, expect, it } from "vitest";
 import { deleteDB } from "idb";
@@ -13,7 +14,7 @@ import {
 } from "../src/storage";
 
 const createTestDb = async () => {
-  const name = `cozyfocus-test-${crypto.randomUUID()}`;
+  const name = `cozyfocus-test-${uuidv4()}`;
   const db = await openCozyDB(name);
   return { db, name };
 };

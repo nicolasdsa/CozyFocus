@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
 import { describe, expect, it } from "vitest";
@@ -13,13 +14,13 @@ const createRoot = (): HTMLElement => {
   return root;
 };
 
-const createDbName = () => `cozyfocus-notes-layout-${crypto.randomUUID()}`;
+const createDbName = () => `cozyfocus-notes-layout-${uuidv4()}`;
 
 describe("notes layout", () => {
   it("places the delete button bottom-left and pads content", async () => {
     const dbName = createDbName();
     const dayKey = getLocalDayKey();
-    const noteId = crypto.randomUUID();
+    const noteId = uuidv4();
 
     const db = await openCozyDB(dbName);
     await db.put("notes", {

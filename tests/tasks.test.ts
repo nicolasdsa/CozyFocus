@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
 import { describe, expect, it } from "vitest";
@@ -13,7 +14,7 @@ const createRoot = (): HTMLElement => {
   return root;
 };
 
-const createDbName = () => `cozyfocus-tasks-test-${crypto.randomUUID()}`;
+const createDbName = () => `cozyfocus-tasks-test-${uuidv4()}`;
 
 const flush = async () => new Promise((resolve) => setTimeout(resolve, 0));
 const waitFor = async (check: () => boolean, attempts = 20) => {
@@ -87,7 +88,7 @@ describe("tasks", () => {
     const dayKey = getLocalDayKey();
     const seededDb = await openCozyDB(dbName);
     await seededDb.put("tasks", {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey,
       title: "Clear inbox",
       completed: false,
@@ -135,7 +136,7 @@ describe("tasks", () => {
 
     const db = await openCozyDB(dbName);
     await db.put("tasks", {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey,
       title: "Prep focus playlist",
       completed: false,

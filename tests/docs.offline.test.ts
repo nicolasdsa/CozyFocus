@@ -1,9 +1,10 @@
+import { v4 as uuidv4 } from 'uuid';
 import "fake-indexeddb/auto";
 import { describe, expect, it, vi } from "vitest";
 import { mountFilesView } from "../src/views/files/filesView";
 import { getLocalDayKey, openCozyDB } from "../src/storage";
 
-const createDbName = () => `cozyfocus-docs-test-${crypto.randomUUID()}`;
+const createDbName = () => `cozyfocus-docs-test-${uuidv4()}`;
 
 const createRoot = (): HTMLElement => {
   document.body.innerHTML = "<div id=\"files-root\"></div>";
@@ -37,7 +38,7 @@ const seedDoc = async (dbName: string, doc: {
   const db = await openCozyDB(dbName);
   const now = Date.now();
   const record = {
-    id: doc.id ?? crypto.randomUUID(),
+    id: doc.id ?? uuidv4(),
     dayKey: doc.dayKey,
     title: doc.title,
     markdown: doc.markdown,

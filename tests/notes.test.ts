@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
 import { describe, expect, it } from "vitest";
@@ -13,7 +14,7 @@ const createRoot = (): HTMLElement => {
   return root;
 };
 
-const createDbName = () => `cozyfocus-notes-test-${crypto.randomUUID()}`;
+const createDbName = () => `cozyfocus-notes-test-${uuidv4()}`;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -53,7 +54,7 @@ describe("notes", () => {
 
     const db = await openCozyDB(dbName);
     const seeded = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey,
       content: "Initial note",
       updatedAt: Date.now()
@@ -103,7 +104,7 @@ describe("notes", () => {
 
     const db = await openCozyDB(dbName);
     await db.put("notes", {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey,
       content: "Remember to stretch",
       updatedAt: Date.now()

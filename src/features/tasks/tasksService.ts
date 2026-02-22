@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { openCozyDB, type TaskRecord } from "../../storage";
 import { getLocalDayKey } from "../../storage/dayKey";
 import { getSetting, saveSetting } from "../../storage/settingsRepo";
@@ -42,7 +43,7 @@ export const createTasksService = (options?: { dbName?: string }): TasksService 
     const db = await dbPromise;
     const now = Date.now();
     const task: TaskRecord = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey: resolveDayKey(dayKey),
       title,
       completed: false,

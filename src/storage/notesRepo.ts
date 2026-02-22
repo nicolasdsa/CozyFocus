@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import type { CozyFocusDatabase, NoteRecord } from "./db";
 import { getLocalDayKey } from "./dayKey";
 
@@ -17,7 +18,7 @@ export const addNote = async (
   lastNoteTimestamp = updatedAt;
 
   const note: NoteRecord = {
-    id: crypto.randomUUID(),
+    id: uuidv4(),
     dayKey: input.dayKey ?? getLocalDayKey(),
     content: input.content,
     updatedAt

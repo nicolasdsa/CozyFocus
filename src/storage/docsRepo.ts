@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import type { CozyFocusDatabase, DocRecord } from "./db";
 import { getLocalDayKey } from "./dayKey";
 
@@ -14,7 +15,7 @@ export const addDoc = async (
 ): Promise<DocRecord> => {
   const now = Date.now();
   const doc: DocRecord = {
-    id: crypto.randomUUID(),
+    id: uuidv4(),
     dayKey: input.dayKey ?? getLocalDayKey(),
     title: input.title,
     markdown: input.markdown,

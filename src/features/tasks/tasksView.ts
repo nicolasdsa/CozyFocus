@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import type { TaskRecord } from "../../storage";
 import { getLocalDayKey } from "../../storage/dayKey";
 import { create, qs } from "../../ui/dom";
@@ -167,7 +168,7 @@ export const mountTasksView = async (
     }
     const now = Date.now();
     const tempTask: TaskRecord = {
-      id: `temp-${crypto.randomUUID()}`,
+      id: `temp-${uuidv4()}`,
       dayKey,
       title,
       completed: false,

@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -116,7 +117,7 @@ describe("pomodoro behavior", () => {
   }, 10000);
 
   it("editing duration updates heading and persists as default", async () => {
-    const dbName = `cozyfocus-pomodoro-defaults-${crypto.randomUUID()}`;
+    const dbName = `cozyfocus-pomodoro-defaults-${uuidv4()}`;
     const root = document.createElement("section");
     document.body.innerHTML = "";
     document.body.appendChild(root);

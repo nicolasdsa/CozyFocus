@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import type { CozyFocusDatabase, TaskRecord } from "./db";
 import { getLocalDayKey } from "./dayKey";
 
@@ -13,7 +14,7 @@ export const createTask = async (
 ): Promise<TaskRecord> => {
   const now = Date.now();
   const task: TaskRecord = {
-    id: crypto.randomUUID(),
+    id: uuidv4(),
     dayKey: input.dayKey ?? getLocalDayKey(),
     title: input.title,
     completed: input.completed ?? false,

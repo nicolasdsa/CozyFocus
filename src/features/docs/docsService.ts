@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { openCozyDB, type DocRecord, type TagRecord } from "../../storage";
 import { getLocalDayKey } from "../../storage/dayKey";
 
@@ -64,7 +65,7 @@ export const createDocsService = (options?: {
     const db = await dbPromise;
     const now = Date.now();
     const doc: DocRecord = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       dayKey: dayKey ?? todayKey,
       title,
       markdown,

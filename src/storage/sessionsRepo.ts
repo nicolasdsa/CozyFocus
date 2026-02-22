@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import type { CozyFocusDatabase, DayStatsRecord, SessionRecord } from "./db";
 import type { SessionType } from "../types";
 import { getLocalDayKey } from "./dayKey";
@@ -17,7 +18,7 @@ export const addCompletedSession = async (
 ): Promise<{ session: SessionRecord; stats: DayStatsRecord }> => {
   const dayKey = input.dayKey ?? getLocalDayKey();
   const session: SessionRecord = {
-    id: crypto.randomUUID(),
+    id: uuidv4(),
     dayKey,
     type: input.type,
     durationMs: input.durationMs,

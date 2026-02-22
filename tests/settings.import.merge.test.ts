@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it } from "vitest";
 import { deleteDB } from "idb";
@@ -6,7 +7,7 @@ import { applyMergePlan, buildMergePlan } from "../src/features/settings/importD
 import type { ExportBundle } from "../src/features/settings/exportData";
 
 const createTestDb = async () => {
-  const name = `cozyfocus-test-${crypto.randomUUID()}`;
+  const name = `cozyfocus-test-${uuidv4()}`;
   const db = await openCozyDB(name);
   return { db, name };
 };

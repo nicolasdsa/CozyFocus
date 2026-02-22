@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import "fake-indexeddb/auto";
 import { deleteDB } from "idb";
 import { describe, expect, it, vi, afterEach } from "vitest";
@@ -28,7 +29,7 @@ afterEach(() => {
 
 describe("player", () => {
   it("persists Spotify input and renders embed", async () => {
-    const dbName = `cozyfocus-player-test-${crypto.randomUUID()}`;
+    const dbName = `cozyfocus-player-test-${uuidv4()}`;
     const service = createPlayerService({ dbName });
     const root = createRoot();
     vi.spyOn(net, "isOnline").mockReturnValue(true);
@@ -57,7 +58,7 @@ describe("player", () => {
   });
 
   it("persists YouTube input and renders embed", async () => {
-    const dbName = `cozyfocus-player-test-${crypto.randomUUID()}`;
+    const dbName = `cozyfocus-player-test-${uuidv4()}`;
     const service = createPlayerService({ dbName });
     const root = createRoot();
     vi.spyOn(net, "isOnline").mockReturnValue(true);
@@ -86,7 +87,7 @@ describe("player", () => {
   });
 
   it("shows validation and does not persist for unknown input", async () => {
-    const dbName = `cozyfocus-player-test-${crypto.randomUUID()}`;
+    const dbName = `cozyfocus-player-test-${uuidv4()}`;
     const service = createPlayerService({ dbName });
     const root = createRoot();
     vi.spyOn(net, "isOnline").mockReturnValue(true);
@@ -113,7 +114,7 @@ describe("player", () => {
   });
 
   it("shows offline placeholder and does not mount iframe", async () => {
-    const dbName = `cozyfocus-player-test-${crypto.randomUUID()}`;
+    const dbName = `cozyfocus-player-test-${uuidv4()}`;
     const service = createPlayerService({ dbName });
     await service.saveSetting("https://youtu.be/dQw4w9WgXcQ");
 
