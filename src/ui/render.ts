@@ -30,6 +30,7 @@ interface PomodoroDockState {
 }
 
 let detachDataChangedListener: (() => void) | null = null;
+const FOCUS_PLAYER_GAP_PX = 16;
 
 const navIconMarkup = (icon: NavIcon): string => {
   if (icon === "coffee") {
@@ -377,12 +378,23 @@ export const renderApp = (root: HTMLElement): void => {
     playerTitle.textContent = status && status.length > 0 ? status : "Playlist";
   };
 
+  const syncFocusLayout = () => {
+    if (currentRoute !== "focus" || !viewRoot.classList.contains("main-column--focus")) {
+      viewRoot.style.setProperty("--focus-player-reserve", "0px");
+      return;
+    }
+    const playerHeight = Math.ceil(sharedPlayerRoot.getBoundingClientRect().height);
+    const reservedSpace = playerHeight > 0 ? playerHeight + FOCUS_PLAYER_GAP_PX : 0;
+    viewRoot.style.setProperty("--focus-player-reserve", `${reservedSpace}px`);
+  };
+
   parkSharedViews();
   playerCarrier.appendChild(sharedPlayerRoot);
   sharedPlayerRoot.classList.add("player--compact");
   if (hasIndexedDb) {
     void shared.mountPlayer().then(() => {
       syncPlayerDock();
+      syncFocusLayout();
     });
   }
 
@@ -434,6 +446,7 @@ export const renderApp = (root: HTMLElement): void => {
 
   window.setInterval(() => {
     if (currentRoute === "focus") {
+      syncFocusLayout();
       return;
     }
     syncPomodoroDock();
@@ -491,6 +504,8 @@ export const renderApp = (root: HTMLElement): void => {
     void Promise.all(tasks.map(async (cleanup) => cleanup()));
     closePlayerDrawer();
     parkSharedViews();
+    viewRoot.classList.remove("main-column--focus");
+    syncFocusLayout();
 
     if (route === "files") {
       dock.hidden = false;
@@ -546,6 +561,8 @@ export const renderApp = (root: HTMLElement): void => {
     playerCarrier.classList.remove("player-carrier--dock");
     playerCarrier.classList.add("player-carrier--focus");
     sharedPlayerRoot.classList.remove("player--compact");
+    viewRoot.classList.add("main-column--focus");
+    syncFocusLayout();
 
     void renderFocusView(viewRoot, shared).then((cleanups) => {
       if (currentRenderVersion !== renderVersion) {
@@ -553,6 +570,7 @@ export const renderApp = (root: HTMLElement): void => {
         return;
       }
       activeCleanups = cleanups;
+      syncFocusLayout();
       animateRouteEntry();
     });
   };

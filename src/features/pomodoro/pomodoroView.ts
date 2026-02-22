@@ -113,7 +113,6 @@ const updateModeButtons = (
 
 const updateHeading = (
   title: HTMLElement,
-  subtitle: HTMLElement,
   snapshot: PomodoroSnapshot
 ) => {
   const totalSeconds = Math.max(0, Math.round(snapshot.durationMs / 1000));
@@ -122,12 +121,10 @@ const updateHeading = (
   const durationLabel = seconds === 0 ? `${minutes}-minute` : `${minutes}:${seconds.toString().padStart(2, "0")}`;
   if (snapshot.mode === "focus") {
     title.textContent = `Ready for a calm ${durationLabel} focus?`;
-    subtitle.textContent = "Eliminate distractions and find your flow.";
     return;
   }
 
-  title.textContent = `Time for a ${modeLabels[snapshot.mode].toLowerCase()}.`;
-  subtitle.textContent = `Recharge with a ${durationLabel} pause.`;
+  title.textContent = `Time for a ${modeLabels[snapshot.mode].toLowerCase()} (${durationLabel}).`;
 };
 
 const updateDisplay = (
@@ -184,7 +181,6 @@ export const mountPomodoroView = async (
   root.innerHTML = `
     <div class="center-heading">
       <h2 data-testid="pomodoro-title">Ready for a calm 25-minute focus?</h2>
-      <p data-testid="pomodoro-subtitle">Eliminate distractions and find your flow.</p>
     </div>
 
     <div class="card center-card">
@@ -228,7 +224,6 @@ export const mountPomodoroView = async (
   const dayKey = options.dayKey ?? getLocalDayKey();
 
   const title = qs<HTMLElement>(root, "pomodoro-title");
-  const subtitle = qs<HTMLElement>(root, "pomodoro-subtitle");
   const timeEl = qs<HTMLElement>(root, "pomodoro-time");
   const labelEl = qs<HTMLElement>(root, "pomodoro-label");
   const minutesEl = timeEl.querySelector<HTMLElement>('[data-role="minutes"]');
@@ -258,7 +253,7 @@ export const mountPomodoroView = async (
     updateRing(progressCircle, snapshot);
     updateControls(snapshot, startButton, pauseButton);
     updateModeButtons(root, snapshot.mode);
-    updateHeading(title, subtitle, snapshot);
+    updateHeading(title, snapshot);
     const isEditable = snapshot.status === "idle";
     minutesEl.contentEditable = isEditable ? "true" : "false";
     secondsEl.contentEditable = isEditable ? "true" : "false";
