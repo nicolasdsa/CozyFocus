@@ -159,7 +159,8 @@ describe("docs offline workflow", () => {
     expect(titleInput?.value).toBe("Untitled note");
 
     const editor = root.querySelector<HTMLTextAreaElement>("[data-testid=\"md-input\"]");
-    expect(document.activeElement).toBe(editor);
+    const codeMirrorInput = root.querySelector<HTMLTextAreaElement>(".CodeMirror textarea");
+    expect([editor, codeMirrorInput]).toContain(document.activeElement as HTMLTextAreaElement | null);
 
   });
 

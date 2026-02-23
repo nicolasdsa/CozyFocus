@@ -570,6 +570,33 @@
   line-height: 1.6;
 }
 
+.files-editor-pane--input .EasyMDEContainer {
+  flex: 1;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+.files-editor-pane--input .CodeMirror {
+  flex: 1;
+  min-height: 220px;
+  height: auto;
+  border: none;
+  background: transparent;
+  color: rgba(226, 232, 240, 0.95);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.files-editor-pane--input .CodeMirror-scroll {
+  min-height: 220px;
+}
+
+.files-editor-pane--input .CodeMirror-cursor {
+  border-left-color: rgba(226, 232, 240, 0.95);
+}
+
 .files-md-preview {
   flex: 1;
   min-height: 220px;
