@@ -53,6 +53,15 @@ const ROADMAP_COLUMNS: RoadmapColumn[] = [
           label: "Feature",
           variant: "feature"
         }
+      },
+      {
+        title: "Mobile responsiveness",
+        description:
+          "Improve layout behavior for mobile devices, with a dedicated design planning phase required before implementation.",
+        tag: {
+          label: "Design",
+          variant: "design"
+        }
       }
     ]
   },

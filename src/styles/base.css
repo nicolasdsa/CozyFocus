@@ -111,8 +111,7 @@ button {
 .activity-dock {
   position: absolute;
   top: 10px;
-  left: calc(88px + (100% - 88px) / 2);
-  transform: translateX(-50%);
+  right: 20px;
   z-index: 8;
   width: min(560px, calc(100vw - 140px));
   display: flex;
@@ -1002,7 +1001,7 @@ button {
   }
 
   .activity-dock {
-    left: calc(88px + (100% - 88px) / 2);
+    right: 12px;
     width: calc(100vw - 112px);
   }
 

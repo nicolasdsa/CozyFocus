@@ -34,6 +34,75 @@ const waitFor = async (check: () => boolean, attempts = 50) => {
 };
 
 describe("settings navigation", () => {
+  it("keeps task and note deleted when leaving focus with undo toast visible", async () => {
+    const { navSettings, navFocus } = setup();
+
+    await waitFor(() => Boolean(document.querySelector('[data-testid="tasks-add"]')));
+    const tasksAdd = document.querySelector<HTMLButtonElement>('[data-testid="tasks-add"]');
+    if (!tasksAdd) {
+      throw new Error("Missing tasks add button");
+    }
+    tasksAdd.click();
+
+    const tasksInput = document.querySelector<HTMLInputElement>('[data-testid="tasks-input"]');
+    if (!tasksInput) {
+      throw new Error("Missing tasks input");
+    }
+    tasksInput.value = "Transient task";
+    tasksInput.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+
+    let taskId: string | null = null;
+    await waitFor(() => {
+      const task = document.querySelector<HTMLElement>('[data-testid^="task-item-"]');
+      const id = task?.dataset.taskId;
+      if (!id || id.startsWith("temp-")) {
+        return false;
+      }
+      taskId = id;
+      return true;
+    });
+
+    const taskDelete = document.querySelector<HTMLButtonElement>(`[data-testid="task-delete-${taskId}"]`);
+    if (!taskDelete) {
+      throw new Error("Missing persisted task delete button");
+    }
+    taskDelete.click();
+    await waitFor(() => Boolean(document.querySelector('[data-testid="undo-toast"]')));
+
+    const notesAdd = document.querySelector<HTMLButtonElement>('[data-testid="notes-add"]');
+    if (!notesAdd) {
+      throw new Error("Missing notes add button");
+    }
+    notesAdd.click();
+
+    let noteId: string | null = null;
+    await waitFor(() => {
+      const note = document.querySelector<HTMLElement>("[data-note-id]");
+      const id = note?.dataset.noteId;
+      if (!id || id.startsWith("temp-")) {
+        return false;
+      }
+      noteId = id;
+      return true;
+    });
+
+    const noteDelete = document.querySelector<HTMLButtonElement>(`[data-testid="note-delete-${noteId}"]`);
+    if (!noteDelete) {
+      throw new Error("Missing persisted note delete button");
+    }
+    noteDelete.click();
+    await waitFor(() => Boolean(document.querySelector('[data-testid="undo-toast"]')));
+
+    navSettings.click();
+    await waitFor(() => Boolean(document.querySelector('[data-testid="settings-view"]')));
+
+    navFocus.click();
+    await waitFor(() => Boolean(document.querySelector('[data-testid="task-queue"]')));
+
+    expect(document.querySelector(`[data-testid="task-item-${taskId}"]`)).toBeNull();
+    expect(document.querySelector(`[data-testid="note-${noteId}"]`)).toBeNull();
+  });
+
   it("clicking nav-settings renders settings-view without page reload", async () => {
     const { navSettings } = setup();
     const baseHref = window.location.href.split("#")[0];
