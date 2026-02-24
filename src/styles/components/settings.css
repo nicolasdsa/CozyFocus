@@ -124,6 +124,20 @@
   transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
+.settings-support-link,
+.settings-feedback-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.settings-support-icon,
+.settings-feedback-icon {
+  width: 16px;
+  height: 16px;
+}
+
 .settings-btn:hover {
   transform: translateY(-1px);
   background: rgba(255, 255, 255, 0.1);

@@ -16,6 +16,8 @@ import type { ExportBundle } from "../../features/settings/exportData";
 import type { TimeFormatMode } from "../../types";
 import { appEvents } from "../../ui/appEvents";
 import arrowIconUrl from "../../assets/arrow.svg";
+import emailIconUrl from "../../assets/email.svg";
+import heartIconUrl from "../../assets/heart.svg";
 
 const formatExportDate = (value: number): string => {
   return new Date(value).toISOString().slice(0, 10);
@@ -158,7 +160,33 @@ export const mountSettingsView = (root: HTMLElement): void => {
             <p class="settings-subtitle">Enjoying the focus?</p>
             <p class="settings-text settings-muted">Fuel the calm with a coffee.</p>
           </div>
-          <button class="settings-btn settings-btn--ghost" type="button">Support Project</button>
+          <a
+            class="settings-btn settings-btn--ghost settings-support-link"
+            href="https://buymeacoffee.com/cozyfocus"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Support CozyFocus on Buy Me a Coffee"
+          >
+            <img src="${heartIconUrl}" alt="" aria-hidden="true" class="settings-support-icon" />
+            <span>Support Project</span>
+          </a>
+        </section>
+
+        <section class="settings-support card" data-testid="settings-feedback">
+          <div>
+            <p class="settings-subtitle">Share your feedback</p>
+            <p class="settings-text settings-muted">
+              Have feedback, suggestions, or found a bug? We'd love to hear from you.
+            </p>
+          </div>
+          <a
+            class="settings-btn settings-btn--ghost settings-feedback-link"
+            href="mailto:contact@cozyfocus.com"
+            aria-label="Send feedback to CozyFocus"
+          >
+            <img src="${emailIconUrl}" alt="" aria-hidden="true" class="settings-feedback-icon" />
+            <span>Email Us</span>
+          </a>
         </section>
       </div>
     </section>
