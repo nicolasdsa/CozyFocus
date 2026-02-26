@@ -201,7 +201,13 @@ export const mountTasksView = async (
       completed: current?.completed ?? persisted.completed,
       completedAt: current?.completedAt ?? persisted.completedAt ?? null
     };
-    tasks = tasks.map((task) => (task.id === tempTask.id ? merged : task));
+    const tempTaskIndex = tasks.findIndex((task) => task.id === tempTask.id);
+    if (tempTaskIndex >= 0) {
+      tasks = tasks.map((task) => (task.id === tempTask.id ? merged : task));
+    } else if (!tasks.some((task) => task.id === persisted.id)) {
+      // A concurrent refresh may have replaced optimistic rows; keep persisted task visible.
+      tasks = sortTasksForView([...tasks, merged]);
+    }
     if (currentFocusId === tempTask.id) {
       currentFocusId = persisted.id;
       await service.setCurrentFocus(dayKey, persisted.id);

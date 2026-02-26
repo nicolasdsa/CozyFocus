@@ -1,0 +1,233 @@
+.ambient-toggle {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  border: 1px solid rgba(59, 130, 246, 0.36);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 0.94));
+  color: #eff6ff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 14px 30px rgba(2, 6, 23, 0.55);
+  z-index: 11;
+}
+
+.ambient-toggle:hover {
+  transform: translateY(-1px);
+}
+
+.ambient-drawer {
+  position: fixed;
+  top: 8px;
+  right: 10px;
+  bottom: 8px;
+  width: min(332px, calc(100vw - 110px));
+  padding: 16px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  background: linear-gradient(180deg, rgba(10, 26, 56, 0.97), rgba(5, 20, 44, 0.96));
+  box-shadow: 0 30px 60px rgba(2, 6, 23, 0.62);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 10;
+  transform: translateX(calc(100% + 22px));
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 200ms ease, opacity 200ms ease;
+}
+
+.ambient-drawer.drawer--open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ambient-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ambient-drawer__header h3 {
+  font-size: 17px;
+}
+
+.ambient-close {
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--color-text-muted);
+  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+}
+
+.ambient-close:hover {
+  color: var(--color-brand-primaryHover);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.ambient-master {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ambient-master input,
+.ambient-track-volume {
+  width: 100%;
+  accent-color: var(--color-brand-primary);
+}
+
+.ambient-track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.ambient-track {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 12px;
+  padding: 10px 10px 8px;
+  background: rgba(15, 23, 42, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ambient-track.is-playing {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: rgba(30, 64, 175, 0.2);
+}
+
+.ambient-track-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ambient-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-muted);
+  background-color: currentColor;
+  flex-shrink: 0;
+  -webkit-mask: var(--ambient-icon-url) center / contain no-repeat;
+  mask: var(--ambient-icon-url) center / contain no-repeat;
+}
+
+.ambient-track.is-playing .ambient-icon,
+.ambient-track:hover .ambient-icon {
+  color: var(--color-brand-primaryHover);
+}
+
+.ambient-track-label {
+  color: var(--color-text-title);
+  font-size: 13px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ambient-track-toggle {
+  border: 1px solid rgba(59, 130, 246, 0.32);
+  background: rgba(37, 99, 235, 0.15);
+  color: #dbeafe;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ambient-track-toggle:hover {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+.ambient-dock-panel {
+  border-radius: 14px;
+  border: 1px solid rgba(59, 130, 246, 0.24);
+  background: linear-gradient(180deg, rgba(8, 25, 53, 0.98), rgba(5, 18, 39, 0.96));
+  box-shadow: 0 20px 42px rgba(2, 6, 23, 0.6);
+  overflow: hidden;
+}
+
+.ambient-dock-popup {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ambient-dock-popup__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-text-title);
+  font-size: 12px;
+}
+
+.ambient-dock-popup__header strong {
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.ambient-dock-popup__header span {
+  color: var(--color-text-muted);
+}
+
+.ambient-dock-popup__master {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ambient-dock-popup__tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(54vh, 320px);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.ambient-dock-track {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 10px;
+  padding: 8px;
+  background: rgba(15, 23, 42, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ambient-dock-track.is-playing {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: rgba(30, 64, 175, 0.2);
+}
+
+.ambient-dock-track__main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ambient-dock-track__label {
+  color: var(--color-text-title);
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+}

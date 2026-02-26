@@ -7,6 +7,7 @@
 @import "./components/calendar.css";
 @import "./components/roadmap.css";
 @import "./components/settings.css";
+@import "./components/ambientDrawer.css";
 
 @font-face {
   font-family: "Inter";
@@ -96,6 +97,11 @@ button {
   position: relative;
   background: radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.15), transparent 50%);
   transition: opacity 0.2s ease;
+  --activity-dock-top: 10px;
+  --activity-dock-right: 200px;
+  --activity-dock-width: min(560px, calc(100vw - 140px));
+  --activity-dock-main-height: 62px;
+  --activity-dock-gap: 12px;
 }
 
 .app-shell::before {
@@ -110,10 +116,10 @@ button {
 
 .activity-dock {
   position: absolute;
-  top: 10px;
-  right: 200px;
+  top: var(--activity-dock-top);
+  right: var(--activity-dock-right);
   z-index: 8;
-  width: min(560px, calc(100vw - 140px));
+  width: var(--activity-dock-width);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -132,7 +138,7 @@ button {
   background: linear-gradient(90deg, rgba(10, 27, 60, 0.96), rgba(11, 27, 59, 0.92));
   box-shadow: 0 14px 28px rgba(2, 6, 23, 0.45);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 0.8fr);
   align-items: center;
   overflow: hidden;
 }
@@ -145,7 +151,23 @@ button {
   min-width: 0;
 }
 
+.activity-dock-block--pomodoro {
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 4px;
+}
+
+.activity-dock-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .activity-dock-block--music {
+  justify-content: space-between;
+}
+
+.activity-dock-block--ambient {
   justify-content: space-between;
 }
 
@@ -210,16 +232,17 @@ button {
   right: 12px;
   bottom: 12px;
   width: 340px;
-  opacity: 0.01;
+  opacity: 0;
+  visibility: hidden;
   pointer-events: none;
 }
 
 .player-carrier--dock {
-  top: 84px;
-  left: calc(88px + (100% - 88px) / 2);
-  transform: translateX(-50%);
-  width: min(560px, calc(100vw - 140px));
+  top: calc(var(--activity-dock-top) + var(--activity-dock-main-height) + var(--activity-dock-gap));
+  right: var(--activity-dock-right);
+  width: var(--activity-dock-width);
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
 }
 
@@ -229,6 +252,31 @@ button {
   bottom: 0;
   width: auto;
   opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.ambient-carrier {
+  position: absolute;
+  z-index: 7;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.ambient-carrier--parked {
+  right: 12px;
+  bottom: 12px;
+  width: 360px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.ambient-carrier--dock {
+  top: calc(var(--activity-dock-top) + var(--activity-dock-main-height) + var(--activity-dock-gap));
+  right: 12px;
+  width: min(380px, calc(100vw - 120px));
+  opacity: 1;
+  visibility: visible;
   pointer-events: auto;
 }
 
@@ -309,6 +357,10 @@ button {
 .main-column .view-enter {
   animation: view-enter-rise 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: var(--view-enter-delay, 0ms);
+}
+
+.main-column.view-root--pre-enter > * {
+  opacity: 0;
 }
 
 @keyframes view-enter-rise {
@@ -996,13 +1048,17 @@ button {
 }
 
 @media (max-width: 980px) {
+  .app-shell {
+    --activity-dock-width: calc(100vw - 112px);
+  }
+
   .footer {
     grid-template-columns: 1fr;
   }
 
   .activity-dock {
-    right: 200px;
-    width: calc(100vw - 112px);
+    right: var(--activity-dock-right);
+    width: var(--activity-dock-width);
   }
 
   .activity-dock-time {
@@ -1010,7 +1066,11 @@ button {
   }
 
   .player-carrier--dock {
-    width: calc(100vw - 112px);
+    width: var(--activity-dock-width);
+  }
+
+  .ambient-carrier--dock {
+    width: min(340px, calc(100vw - 120px));
   }
 
   .player-embed {

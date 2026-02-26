@@ -18,6 +18,11 @@ import fullscreenIconUrl from "../assets/fullscreen.svg";
 import mapIconMarkup from "../assets/map.svg?raw";
 import { appEvents } from "./appEvents";
 import { applyRouteSeo } from "../seo/routeSeo";
+import { appAmbientController, appAmbientStore } from "../app/appState";
+import type { AmbientController } from "../features/ambient/ambientController";
+import type { AmbientStore } from "../features/ambient/ambientStore";
+import { mountAmbientDrawerView } from "../features/ambient/ambientDrawerView";
+import { mountAmbientDockView, type AmbientDockViewHandle } from "../features/ambient/ambientDockView";
 
 type CleanupTask = () => Promise<void> | void;
 type NavIcon = "coffee" | "calendar" | "article" | "roadmap" | "settings";
@@ -27,6 +32,11 @@ interface PomodoroDockState {
   label: string;
   canResume: boolean;
   canPause: boolean;
+}
+
+interface RenderAppOptions {
+  ambientController?: AmbientController;
+  ambientStore?: AmbientStore;
 }
 
 let detachDataChangedListener: (() => void) | null = null;
@@ -113,6 +123,8 @@ const renderFocusView = async (
   shared: {
     pomodoroRoot: HTMLElement;
     mountPomodoro: () => Promise<void>;
+    ambientController: AmbientController;
+    ambientStore: AmbientStore;
   }
 ): Promise<CleanupTask[]> => {
   root.innerHTML = `
@@ -139,6 +151,12 @@ const renderFocusView = async (
   `;
 
   const cleanups: CleanupTask[] = [];
+  const ambientDrawerHandle = mountAmbientDrawerView(root, {
+    controller: shared.ambientController,
+    store: shared.ambientStore
+  });
+  cleanups.push(() => ambientDrawerHandle.destroy());
+
   const stealthToggle = root.querySelector<HTMLButtonElement>('[data-testid="stealth-toggle"]');
   const fullscreenToggle = root.querySelector<HTMLButtonElement>('[data-testid="fullscreen-toggle"]');
   const undoToastRegion = qs<HTMLElement>(root, "undo-toast-region");
@@ -210,7 +228,10 @@ const renderFocusView = async (
   return cleanups;
 };
 
-export const renderApp = (root: HTMLElement): void => {
+export const renderApp = (root: HTMLElement, options: RenderAppOptions = {}): void => {
+  const ambientController = options.ambientController ?? appAmbientController;
+  const ambientStore = options.ambientStore ?? appAmbientStore;
+
   root.innerHTML = `
     <div class="app-shell">
       <nav class="navbar" data-testid="nav">
@@ -268,20 +289,34 @@ export const renderApp = (root: HTMLElement): void => {
 
       <div class="activity-dock" data-testid="activity-dock" hidden>
         <div class="activity-dock-main">
-          <div class="activity-dock-block">
+          <div class="activity-dock-block activity-dock-block--pomodoro">
             <span class="activity-dock-label" data-testid="activity-pomodoro-label">FOCUS</span>
-            <span class="activity-dock-time" data-testid="activity-pomodoro-time">00:00</span>
-            <button class="activity-dock-btn" type="button" data-testid="activity-pomodoro-toggle">▶</button>
+            <div class="activity-dock-row">
+              <span class="activity-dock-time" data-testid="activity-pomodoro-time">00:00</span>
+              <button class="activity-dock-btn" type="button" data-testid="activity-pomodoro-toggle">▶</button>
+            </div>
           </div>
           <div class="activity-dock-divider"></div>
           <div class="activity-dock-block activity-dock-block--music">
             <span class="activity-dock-track" data-testid="activity-player-title">Playlist</span>
             <button class="activity-dock-btn activity-dock-btn--ghost" type="button" data-testid="activity-player-toggle">◉</button>
           </div>
+          <div class="activity-dock-divider"></div>
+          <div class="activity-dock-block activity-dock-block--ambient">
+            <span class="activity-dock-track" data-testid="activity-ambient-title">Ambient</span>
+            <button
+              class="activity-dock-btn activity-dock-btn--ghost"
+              type="button"
+              data-testid="activity-ambient-toggle"
+            >
+              ♪
+            </button>
+          </div>
         </div>
       </div>
 
       <div class="player-carrier player-carrier--parked" data-testid="activity-player-drawer"></div>
+      <div class="ambient-carrier ambient-carrier--parked" data-testid="activity-ambient-drawer"></div>
       <div class="view-parking" data-testid="view-parking" hidden></div>
     </div>
   `;
@@ -295,7 +330,10 @@ export const renderApp = (root: HTMLElement): void => {
   const pomodoroToggle = qs<HTMLButtonElement>(root, "activity-pomodoro-toggle");
   const playerTitle = qs<HTMLElement>(root, "activity-player-title");
   const playerToggle = qs<HTMLButtonElement>(root, "activity-player-toggle");
+  const ambientTitle = qs<HTMLElement>(root, "activity-ambient-title");
+  const ambientToggle = qs<HTMLButtonElement>(root, "activity-ambient-toggle");
   const playerCarrier = qs<HTMLElement>(root, "activity-player-drawer");
+  const ambientCarrier = qs<HTMLElement>(root, "activity-ambient-drawer");
   const hasIndexedDb = "indexedDB" in globalThis;
 
   const sharedPomodoroRoot = document.createElement("section");
@@ -306,6 +344,10 @@ export const renderApp = (root: HTMLElement): void => {
   sharedPlayerRoot.className = "footer player";
   sharedPlayerRoot.setAttribute("data-testid", "player");
 
+  const sharedAmbientRoot = document.createElement("aside");
+  sharedAmbientRoot.className = "ambient-dock-panel";
+  sharedAmbientRoot.setAttribute("data-testid", "ambient-dock-panel");
+
   let activeCleanups: CleanupTask[] = [];
   let renderVersion = 0;
   let currentRoute: AppRoute = "focus";
@@ -313,7 +355,10 @@ export const renderApp = (root: HTMLElement): void => {
   let pomodoroMountPromise: Promise<void> | null = null;
   let playerHandle: PlayerViewHandle | null = null;
   let playerMountPromise: Promise<void> | null = null;
+  let ambientDockHandle: AmbientDockViewHandle | null = null;
+  let ambientDockMountPromise: Promise<void> | null = null;
   let playerDrawerOpen = false;
+  let ambientDrawerOpen = false;
   let enterAnimationTimer: number | null = null;
 
   const pomodoroBridge = createPomodoroBridge(sharedPomodoroRoot);
@@ -330,6 +375,13 @@ export const renderApp = (root: HTMLElement): void => {
     playerCarrier.classList.add("player-carrier--parked");
   };
 
+  const closeAmbientDrawer = () => {
+    ambientDrawerOpen = false;
+    ambientToggle.textContent = "♪";
+    ambientCarrier.classList.remove("ambient-carrier--dock");
+    ambientCarrier.classList.add("ambient-carrier--parked");
+  };
+
   if (!hasIndexedDb) {
     playerToggle.disabled = true;
     playerToggle.setAttribute("aria-label", "Media unavailable");
@@ -337,6 +389,8 @@ export const renderApp = (root: HTMLElement): void => {
 
   const shared = {
     pomodoroRoot: sharedPomodoroRoot,
+    ambientController,
+    ambientStore,
     mountPomodoro: async () => {
       if (pomodoroHandle) {
         return;
@@ -358,6 +412,22 @@ export const renderApp = (root: HTMLElement): void => {
         });
       }
       await playerMountPromise;
+    },
+    mountAmbientDock: async () => {
+      if (ambientDockHandle) {
+        return;
+      }
+      if (!ambientDockMountPromise) {
+        ambientDockMountPromise = Promise.resolve(
+          mountAmbientDockView(sharedAmbientRoot, {
+            controller: ambientController,
+            store: ambientStore
+          })
+        ).then((handle) => {
+          ambientDockHandle = handle;
+        });
+      }
+      await ambientDockMountPromise;
     }
   };
 
@@ -387,6 +457,11 @@ export const renderApp = (root: HTMLElement): void => {
     playerTitle.textContent = status && status.length > 0 ? status : "Playlist";
   };
 
+  const syncAmbientDock = () => {
+    const activeCount = Object.values(ambientStore.getState().playing).filter(Boolean).length;
+    ambientTitle.textContent = activeCount > 0 ? `Ambient (${activeCount})` : "Ambient";
+  };
+
   const syncFocusLayout = () => {
     if (currentRoute !== "focus" || !viewRoot.classList.contains("main-column--focus")) {
       viewRoot.style.setProperty("--focus-player-reserve", "0px");
@@ -399,13 +474,18 @@ export const renderApp = (root: HTMLElement): void => {
 
   parkSharedViews();
   playerCarrier.appendChild(sharedPlayerRoot);
+  ambientCarrier.appendChild(sharedAmbientRoot);
   sharedPlayerRoot.classList.add("player--compact");
+  closeAmbientDrawer();
   if (hasIndexedDb) {
     void shared.mountPlayer().then(() => {
       syncPlayerDock();
       syncFocusLayout();
     });
   }
+  void shared.mountAmbientDock().then(() => {
+    syncAmbientDock();
+  });
 
   detachDataChangedListener?.();
   detachDataChangedListener = appEvents.on("dataChanged", () => {
@@ -418,6 +498,7 @@ export const renderApp = (root: HTMLElement): void => {
       await playerHandle?.reloadFromStorage();
       syncPomodoroDock();
       syncPlayerDock();
+      syncAmbientDock();
     })();
   });
 
@@ -445,11 +526,28 @@ export const renderApp = (root: HTMLElement): void => {
         closePlayerDrawer();
         return;
       }
+      closeAmbientDrawer();
       playerDrawerOpen = true;
       playerToggle.textContent = "✕";
       sharedPlayerRoot.classList.add("player--compact");
       playerCarrier.classList.remove("player-carrier--parked");
       playerCarrier.classList.add("player-carrier--dock");
+    })();
+  });
+
+  ambientToggle.addEventListener("click", () => {
+    void (async () => {
+      await shared.mountAmbientDock();
+      syncAmbientDock();
+      if (ambientDrawerOpen) {
+        closeAmbientDrawer();
+        return;
+      }
+      closePlayerDrawer();
+      ambientDrawerOpen = true;
+      ambientToggle.textContent = "✕";
+      ambientCarrier.classList.remove("ambient-carrier--parked");
+      ambientCarrier.classList.add("ambient-carrier--dock");
     })();
   });
 
@@ -460,6 +558,7 @@ export const renderApp = (root: HTMLElement): void => {
     }
     syncPomodoroDock();
     syncPlayerDock();
+    syncAmbientDock();
   }, 250);
 
   const setActiveNav = (route: AppRoute) => {
@@ -506,12 +605,14 @@ export const renderApp = (root: HTMLElement): void => {
     renderVersion += 1;
     currentRoute = route;
     const currentRenderVersion = renderVersion;
+    viewRoot.classList.remove("view-root--pre-enter");
     setActiveNav(route);
     applyRouteSeo(route);
     const tasks = activeCleanups;
     activeCleanups = [];
     void runCleanupsInOrder(tasks);
     closePlayerDrawer();
+    closeAmbientDrawer();
     parkSharedViews();
     viewRoot.classList.remove("main-column--focus");
     syncFocusLayout();
@@ -523,6 +624,7 @@ export const renderApp = (root: HTMLElement): void => {
       }
       syncPomodoroDock();
       syncPlayerDock();
+      syncAmbientDock();
       playerCarrier.classList.remove("player-carrier--focus");
       mountFilesView(viewRoot);
       animateRouteEntry();
@@ -535,6 +637,7 @@ export const renderApp = (root: HTMLElement): void => {
       }
       syncPomodoroDock();
       syncPlayerDock();
+      syncAmbientDock();
       playerCarrier.classList.remove("player-carrier--focus");
       mountCalendarView(viewRoot);
       animateRouteEntry();
@@ -547,6 +650,7 @@ export const renderApp = (root: HTMLElement): void => {
       }
       syncPomodoroDock();
       syncPlayerDock();
+      syncAmbientDock();
       playerCarrier.classList.remove("player-carrier--focus");
       mountSettingsView(viewRoot);
       animateRouteEntry();
@@ -559,6 +663,7 @@ export const renderApp = (root: HTMLElement): void => {
       }
       syncPomodoroDock();
       syncPlayerDock();
+      syncAmbientDock();
       playerCarrier.classList.remove("player-carrier--focus");
       mountRoadmapView(viewRoot);
       animateRouteEntry();
@@ -571,16 +676,24 @@ export const renderApp = (root: HTMLElement): void => {
     playerCarrier.classList.add("player-carrier--focus");
     sharedPlayerRoot.classList.remove("player--compact");
     viewRoot.classList.add("main-column--focus");
+    viewRoot.classList.add("view-root--pre-enter");
     syncFocusLayout();
 
     void renderFocusView(viewRoot, shared).then((cleanups) => {
       if (currentRenderVersion !== renderVersion) {
+        viewRoot.classList.remove("view-root--pre-enter");
         void runCleanupsInOrder(cleanups);
         return;
       }
       activeCleanups = cleanups;
+      viewRoot.classList.remove("view-root--pre-enter");
       syncFocusLayout();
-      animateRouteEntry();
+      window.requestAnimationFrame(() => {
+        if (currentRenderVersion !== renderVersion) {
+          return;
+        }
+        animateRouteEntry();
+      });
     });
   };
 

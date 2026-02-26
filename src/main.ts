@@ -2,6 +2,7 @@ import "./styles/base.css";
 import { renderApp } from "./ui/render";
 import { openCozyDB } from "./storage/db";
 import coffeeIconUrl from "./assets/coffee.svg";
+import { appAmbientController, appAmbientStore } from "./app/appState";
 
 const setupDb = async () => {
   await openCozyDB();
@@ -21,7 +22,18 @@ if (!faviconLink.parentElement) {
   document.head.appendChild(faviconLink);
 }
 
-renderApp(appRoot);
+renderApp(appRoot, {
+  ambientController: appAmbientController,
+  ambientStore: appAmbientStore
+});
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker.register("/sw.js").catch(() => {
+      // Ignore SW registration failures to keep the app interactive.
+    });
+  });
+}
 setupDb().catch(() => {
   // Keep UI responsive even if IndexedDB is unavailable.
 });
