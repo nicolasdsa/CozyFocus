@@ -7,6 +7,9 @@ export interface AmbientStoreState {
   playing: Record<AmbientTrackId, boolean>;
 }
 
+export const DEFAULT_AMBIENT_MASTER_VOLUME = 1;
+export const DEFAULT_AMBIENT_TRACK_VOLUME = 0.55;
+
 type AmbientListener = (state: AmbientStoreState) => void;
 
 export interface AmbientStore {
@@ -26,7 +29,7 @@ const clamp01 = (value: number): number => {
   return Math.max(0, Math.min(1, value));
 };
 
-const buildTrackVolumeRecord = (defaultVolume: number): Record<AmbientTrackId, number> => {
+export const buildTrackVolumeRecord = (defaultVolume: number): Record<AmbientTrackId, number> => {
   const volume = clamp01(defaultVolume);
   return {
     campfire: volume,
@@ -57,9 +60,9 @@ export const createAmbientStore = (
 
   let state: AmbientStoreState = {
     drawerOpen: Boolean(initialState?.drawerOpen),
-    masterVolume: clamp01(initialState?.masterVolume ?? 1),
+    masterVolume: clamp01(initialState?.masterVolume ?? DEFAULT_AMBIENT_MASTER_VOLUME),
     trackVolumes: {
-      ...buildTrackVolumeRecord(0.55),
+      ...buildTrackVolumeRecord(DEFAULT_AMBIENT_TRACK_VOLUME),
       ...initialState?.trackVolumes
     },
     playing: {

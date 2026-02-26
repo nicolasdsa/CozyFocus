@@ -9,6 +9,13 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null;
 };
 
+const isNumberRecord = (value: unknown): value is Record<string, number> => {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return Object.values(value).every((entry) => typeof entry === "number");
+};
+
 const toNumberOrFallback = (value: unknown, fallback: number): number => {
   return typeof value === "number" ? value : fallback;
 };
@@ -233,6 +240,10 @@ export const resolveSettingKey = (record: unknown): string | null => {
     typeof record.platformId === "string"
   ) {
     return "mediaPlayer";
+  }
+
+  if (typeof record.masterVolume === "number" && isNumberRecord(record.trackVolumes)) {
+    return "ambientMixer";
   }
 
   if (typeof record.dayKey === "string" && "taskId" in record) {

@@ -278,4 +278,54 @@ describe("settings import merge", () => {
     verifyDb.close();
     await deleteDB(name);
   });
+
+  it("imports ambient mixer volumes from settings bundle", async () => {
+    const { db, name } = await createTestDb();
+    db.close();
+
+    const bundle: ExportBundle = {
+      schemaVersion: 1,
+      exportedAt: Date.now(),
+      app: "CozyFocus",
+      data: {
+        tasks: [],
+        notes: [],
+        sessions: [],
+        stats: [],
+        docs: [],
+        settings: [
+          {
+            masterVolume: 0.72,
+            trackVolumes: {
+              campfire: 0.31,
+              coffee_place: 0.49,
+              fireplace: 0.64,
+              wind: 0.22
+            },
+            updatedAt: 200
+          }
+        ]
+      }
+    };
+
+    const result = await applyMergePlan(bundle, { dbName: name });
+    expect(result.plan.settings.add).toBe(1);
+
+    const verifyDb = await openCozyDB(name);
+    const ambient = await verifyDb.get("settings", "ambientMixer");
+    expect(ambient).toEqual(
+      expect.objectContaining({
+        masterVolume: 0.72,
+        trackVolumes: expect.objectContaining({
+          campfire: 0.31,
+          coffee_place: 0.49,
+          fireplace: 0.64,
+          wind: 0.22
+        }),
+        updatedAt: 200
+      })
+    );
+    verifyDb.close();
+    await deleteDB(name);
+  });
 });

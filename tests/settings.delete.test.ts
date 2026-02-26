@@ -185,6 +185,7 @@ describe("settings delete data", () => {
 
     await waitFor(() => Boolean(document.querySelector('[data-testid="pomodoro-time"]')));
     await waitFor(() => Boolean(document.querySelector('[data-testid="player-input"]')));
+    await waitFor(() => Boolean(document.querySelector('[data-testid="ambient-dock-master"]')));
 
     const pomodoroTime = document.querySelector<HTMLElement>('[data-testid="pomodoro-time"]');
     const minutesEl = pomodoroTime?.querySelector<HTMLElement>('[data-role="minutes"]');
@@ -209,6 +210,34 @@ describe("settings delete data", () => {
       const status = document.querySelector<HTMLElement>('[data-testid="player-status"]');
       return Boolean(status?.textContent?.toLowerCase().includes("playing"));
     });
+
+    const ambientMaster = document.querySelector<HTMLInputElement>(
+      '[data-testid="ambient-dock-master"]'
+    );
+    const ambientCampfire = document.querySelector<HTMLInputElement>(
+      '[data-testid="ambient-dock-volume-campfire"]'
+    );
+    if (!ambientMaster || !ambientCampfire) {
+      throw new Error("Missing ambient dock controls");
+    }
+    ambientMaster.value = "43";
+    ambientMaster.dispatchEvent(new Event("input", { bubbles: true }));
+    ambientCampfire.value = "67";
+    ambientCampfire.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 220));
+
+    const dbBeforeDelete = await openCozyDB();
+    const ambientSetting = (await dbBeforeDelete.get("settings", "ambientMixer")) as
+      | {
+          masterVolume: number;
+          trackVolumes: {
+            campfire: number;
+          };
+        }
+      | undefined;
+    expect(ambientSetting?.masterVolume).toBeCloseTo(0.43);
+    expect(ambientSetting?.trackVolumes.campfire).toBeCloseTo(0.67);
+    dbBeforeDelete.close();
 
     const navSettings = document.querySelector<HTMLElement>('[data-testid="nav-settings"]');
     if (!navSettings) {
@@ -245,7 +274,9 @@ describe("settings delete data", () => {
         minutesEl.textContent === "25" &&
         secondsEl.textContent === "00" &&
         playerInput.value === "" &&
-        Boolean(playerStatus?.textContent?.includes("Ready"))
+        Boolean(playerStatus?.textContent?.includes("Ready")) &&
+        ambientMaster.value === "100" &&
+        ambientCampfire.value === "55"
       );
     }, 50);
 
@@ -254,5 +285,7 @@ describe("settings delete data", () => {
     expect(playerInput.value).toBe("");
     const playerStatus = document.querySelector<HTMLElement>('[data-testid="player-status"]');
     expect(playerStatus?.textContent).toContain("Ready");
+    expect(ambientMaster.value).toBe("100");
+    expect(ambientCampfire.value).toBe("55");
   });
 });

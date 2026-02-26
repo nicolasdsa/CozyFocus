@@ -23,6 +23,13 @@ import type { AmbientController } from "../features/ambient/ambientController";
 import type { AmbientStore } from "../features/ambient/ambientStore";
 import { mountAmbientDrawerView } from "../features/ambient/ambientDrawerView";
 import { mountAmbientDockView, type AmbientDockViewHandle } from "../features/ambient/ambientDockView";
+import {
+  createAmbientService,
+  getAmbientMixerDefaults,
+  type AmbientService
+} from "../features/ambient/ambientService";
+import type { AmbientMixerSetting } from "../features/ambient/ambientSetting";
+import { AMBIENT_TRACKS } from "../features/ambient/ambientTypes";
 
 type CleanupTask = () => Promise<void> | void;
 type NavIcon = "coffee" | "calendar" | "article" | "roadmap" | "settings";
@@ -40,6 +47,7 @@ interface RenderAppOptions {
 }
 
 let detachDataChangedListener: (() => void) | null = null;
+let detachAmbientStoreListener: (() => void) | null = null;
 const FOCUS_PLAYER_GAP_PX = 16;
 
 const runCleanupsInOrder = async (tasks: CleanupTask[]): Promise<void> => {
@@ -335,6 +343,7 @@ export const renderApp = (root: HTMLElement, options: RenderAppOptions = {}): vo
   const playerCarrier = qs<HTMLElement>(root, "activity-player-drawer");
   const ambientCarrier = qs<HTMLElement>(root, "activity-ambient-drawer");
   const hasIndexedDb = "indexedDB" in globalThis;
+  const ambientService: AmbientService | null = hasIndexedDb ? createAmbientService() : null;
 
   const sharedPomodoroRoot = document.createElement("section");
   sharedPomodoroRoot.className = "center-stack";
@@ -360,6 +369,9 @@ export const renderApp = (root: HTMLElement, options: RenderAppOptions = {}): vo
   let playerDrawerOpen = false;
   let ambientDrawerOpen = false;
   let enterAnimationTimer: number | null = null;
+  let ambientPersistTimer: number | null = null;
+  let isApplyingAmbientFromStorage = false;
+  let lastAmbientVolumeFingerprint = "";
 
   const pomodoroBridge = createPomodoroBridge(sharedPomodoroRoot);
 
@@ -462,6 +474,89 @@ export const renderApp = (root: HTMLElement, options: RenderAppOptions = {}): vo
     ambientTitle.textContent = activeCount > 0 ? `Ambient (${activeCount})` : "Ambient";
   };
 
+  const getAmbientVolumeState = (): Pick<AmbientMixerSetting, "masterVolume" | "trackVolumes"> => {
+    const defaults = getAmbientMixerDefaults();
+    const state = ambientStore.getState();
+    const trackVolumes = { ...defaults.trackVolumes };
+    AMBIENT_TRACKS.forEach((track) => {
+      trackVolumes[track.id] = state.trackVolumes[track.id];
+    });
+    return {
+      masterVolume: state.masterVolume,
+      trackVolumes
+    };
+  };
+
+  const toAmbientFingerprint = (
+    setting: Pick<AmbientMixerSetting, "masterVolume" | "trackVolumes">
+  ): string => {
+    return [
+      setting.masterVolume.toFixed(4),
+      ...AMBIENT_TRACKS.map((track) => setting.trackVolumes[track.id].toFixed(4))
+    ].join("|");
+  };
+
+  const applyAmbientFromStorage = (
+    setting: AmbientMixerSetting | null,
+    options: { pausePlaying: boolean }
+  ): void => {
+    const defaults = getAmbientMixerDefaults();
+    const nextState = setting
+      ? {
+          masterVolume: setting.masterVolume,
+          trackVolumes: setting.trackVolumes
+        }
+      : defaults;
+
+    if (ambientPersistTimer) {
+      window.clearTimeout(ambientPersistTimer);
+      ambientPersistTimer = null;
+    }
+
+    isApplyingAmbientFromStorage = true;
+    try {
+      if (options.pausePlaying) {
+        AMBIENT_TRACKS.forEach((track) => {
+          ambientController.pause(track.id);
+        });
+      }
+      ambientController.setMasterVolume(nextState.masterVolume);
+      AMBIENT_TRACKS.forEach((track) => {
+        ambientController.setVolume(track.id, nextState.trackVolumes[track.id]);
+      });
+      lastAmbientVolumeFingerprint = toAmbientFingerprint(nextState);
+    } finally {
+      isApplyingAmbientFromStorage = false;
+    }
+  };
+
+  const persistAmbientVolumesSoon = (): void => {
+    if (!ambientService || isApplyingAmbientFromStorage) {
+      return;
+    }
+
+    const snapshot = getAmbientVolumeState();
+    const snapshotFingerprint = toAmbientFingerprint(snapshot);
+    if (snapshotFingerprint === lastAmbientVolumeFingerprint) {
+      return;
+    }
+
+    if (ambientPersistTimer) {
+      window.clearTimeout(ambientPersistTimer);
+    }
+    ambientPersistTimer = window.setTimeout(() => {
+      ambientPersistTimer = null;
+      void ambientService
+        .saveSetting(snapshot)
+        .then(() => {
+          lastAmbientVolumeFingerprint = snapshotFingerprint;
+        })
+        .catch((error: unknown) => {
+          console.error("Failed to persist ambient mixer settings", error);
+        });
+    }, 120);
+  };
+
   const syncFocusLayout = () => {
     if (currentRoute !== "focus" || !viewRoot.classList.contains("main-column--focus")) {
       viewRoot.style.setProperty("--focus-player-reserve", "0px");
@@ -486,6 +581,23 @@ export const renderApp = (root: HTMLElement, options: RenderAppOptions = {}): vo
   void shared.mountAmbientDock().then(() => {
     syncAmbientDock();
   });
+  lastAmbientVolumeFingerprint = toAmbientFingerprint(getAmbientVolumeState());
+  detachAmbientStoreListener?.();
+  detachAmbientStoreListener = ambientStore.subscribe(() => {
+    syncAmbientDock();
+    persistAmbientVolumesSoon();
+  });
+  if (ambientService) {
+    void ambientService
+      .getSetting()
+      .then((setting) => {
+        applyAmbientFromStorage(setting, { pausePlaying: false });
+        syncAmbientDock();
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to load ambient mixer settings", error);
+      });
+  }
 
   detachDataChangedListener?.();
   detachDataChangedListener = appEvents.on("dataChanged", () => {
@@ -496,6 +608,10 @@ export const renderApp = (root: HTMLElement, options: RenderAppOptions = {}): vo
       }
       await pomodoroHandle?.resetFromStorage();
       await playerHandle?.reloadFromStorage();
+      if (ambientService) {
+        const ambientSetting = await ambientService.getSetting();
+        applyAmbientFromStorage(ambientSetting, { pausePlaying: true });
+      }
       syncPomodoroDock();
       syncPlayerDock();
       syncAmbientDock();

@@ -6,6 +6,7 @@ import type {
   TimeFormatSetting
 } from "../types";
 import type { MediaPlayerSetting } from "../features/player/playerTypes";
+import type { AmbientMixerSetting } from "../features/ambient/ambientSetting";
 
 export interface TaskRecord {
   id: string;
@@ -89,7 +90,12 @@ interface CozyFocusDB extends DBSchema {
   };
   settings: {
     key: string;
-    value: MediaPlayerSetting | PomodoroDefaultsSetting | TaskFocusSetting | TimeFormatSetting;
+    value:
+      | MediaPlayerSetting
+      | AmbientMixerSetting
+      | PomodoroDefaultsSetting
+      | TaskFocusSetting
+      | TimeFormatSetting;
   };
 }
 
