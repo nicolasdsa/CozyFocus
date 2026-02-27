@@ -229,6 +229,10 @@ export const mountPlayerView = async (
 
     const controls = document.createElement("div");
     controls.className = "player-youtube-controls";
+    const topControls = document.createElement("div");
+    topControls.className = "player-youtube-controls-top";
+    const volumeRow = document.createElement("div");
+    volumeRow.className = "player-youtube-controls-volume";
 
     const playPauseButton = document.createElement("button");
     playPauseButton.className = "player-youtube-btn";
@@ -259,7 +263,9 @@ export const mountPlayerView = async (
     expandButton.setAttribute("data-testid", "player-youtube-expand");
     expandButton.setAttribute("aria-expanded", "false");
 
-    controls.append(playPauseButton, muteButton, volume, expandButton);
+    topControls.append(playPauseButton, muteButton, expandButton);
+    volumeRow.append(volume);
+    controls.append(topControls, volumeRow);
     shell.append(thumb, details, controls);
     custom.appendChild(shell);
 
