@@ -35,7 +35,8 @@ export const buildTrackVolumeRecord = (defaultVolume: number): Record<AmbientTra
     campfire: volume,
     coffee_place: volume,
     fireplace: volume,
-    wind: volume
+    wind: volume,
+    rain: volume
   };
 };
 
@@ -44,7 +45,8 @@ const buildPlayingRecord = (): Record<AmbientTrackId, boolean> => {
     campfire: false,
     coffee_place: false,
     fireplace: false,
-    wind: false
+    wind: false,
+    rain: false
   };
 };
 

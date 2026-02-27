@@ -64,16 +64,15 @@ describe("roadmap view", () => {
     expect(plannedTitles).toEqual([
       "Share streaks to Instagram Stories",
       "Markdown notes editor improvements",
-      "Dynamic and fixed background update",
       "Pomodoro extension",
       "Mobile responsiveness"
     ]);
-    expect(progressTitles).toEqual(["Ambient sounds"]);
-    expect(doneTitles).toEqual(["Version 1.0 completed"]);
+    expect(progressTitles).toEqual(["Dynamic and fixed background update"]);
+    expect(doneTitles).toEqual(["Ambient sounds", "Version 1.0 completed"]);
 
-    expect(planned.querySelectorAll("[data-testid^='roadmap-card-']").length).toBe(5);
+    expect(planned.querySelectorAll("[data-testid^='roadmap-card-']").length).toBe(4);
     expect(progress.querySelectorAll("[data-testid^='roadmap-card-']").length).toBe(1);
-    expect(done.querySelectorAll("[data-testid^='roadmap-card-']").length).toBe(1);
+    expect(done.querySelectorAll("[data-testid^='roadmap-card-']").length).toBe(2);
   });
 
   it("places roadmap button directly above settings in navbar", () => {

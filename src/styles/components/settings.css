@@ -426,6 +426,24 @@
   color: var(--color-danger-cozy);
 }
 
+.settings-credits-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-credits-link {
+  color: #93c5fd;
+  text-decoration: none;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.settings-credits-link:hover {
+  color: #bfdbfe;
+  text-decoration: underline;
+}
+
 @media (max-width: 720px) {
   .settings-view {
     padding: 20px;

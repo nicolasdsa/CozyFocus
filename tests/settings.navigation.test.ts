@@ -121,6 +121,7 @@ describe("settings navigation", () => {
     expect(document.querySelector('[data-testid="settings-about"]')).toBeTruthy();
     expect(document.querySelector('[data-testid="settings-repo"]')).toBeTruthy();
     expect(document.querySelector('[data-testid="settings-data"]')).toBeTruthy();
+    expect(document.querySelector('[data-testid="settings-credits"]')).toBeTruthy();
   });
 
   it("renders data management buttons by testid", async () => {

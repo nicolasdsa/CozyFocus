@@ -47,7 +47,7 @@ describe("ambient controller", () => {
 
     await controller.play("campfire");
     expect(FakeAudio.created).toHaveLength(1);
-    expect(FakeAudio.created[0]?.src).toBe("/audio/campfire.mp3");
+    expect(FakeAudio.created[0]?.src).toBe("/audio/summer.mp3");
 
     await controller.play("campfire");
     expect(FakeAudio.created).toHaveLength(1);

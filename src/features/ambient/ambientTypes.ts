@@ -1,4 +1,4 @@
-export type AmbientTrackId = "campfire" | "coffee_place" | "fireplace" | "wind";
+export type AmbientTrackId = "campfire" | "coffee_place" | "fireplace" | "wind" | "rain";
 
 export interface AmbientTrack {
   id: AmbientTrackId;
@@ -10,9 +10,9 @@ export interface AmbientTrack {
 export const AMBIENT_TRACKS: readonly AmbientTrack[] = [
   {
     id: "campfire",
-    label: "Campfire",
-    src: "/audio/campfire.mp3",
-    icon: "/icons/ambient/campfire.svg"
+    label: "Park Ambience",
+    src: "/audio/summer.mp3",
+    icon: "/icons/ambient/summer.svg"
   },
   {
     id: "coffee_place",
@@ -31,5 +31,11 @@ export const AMBIENT_TRACKS: readonly AmbientTrack[] = [
     label: "Wind",
     src: "/audio/wind.mp3",
     icon: "/icons/ambient/wind.svg"
+  },
+  {
+    id: "rain",
+    label: "Rain",
+    src: "/audio/rain.mp3",
+    icon: "/icons/ambient/rain.svg"
   }
 ] as const;

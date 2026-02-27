@@ -188,6 +188,41 @@ export const mountSettingsView = (root: HTMLElement): void => {
             <span>Email Us</span>
           </a>
         </section>
+
+        <section class="settings-section card settings-credits" data-testid="settings-credits">
+          <div class="settings-section-header">
+            <span class="settings-caption">Ambient Sounds Credits</span>
+          </div>
+          <p class="settings-text settings-muted">
+            Ambient tracks used in CozyFocus are credited to these Pixabay creators:
+          </p>
+          <div class="settings-credits-links">
+            <a
+              class="settings-credits-link"
+              href="https://pixabay.com/users/dragon-studio-38165424/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              dragon-studio-38165424
+            </a>
+            <a
+              class="settings-credits-link"
+              href="https://pixabay.com/users/freesound_community-46691455/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              freesound_community-46691455
+            </a>
+            <a
+              class="settings-credits-link"
+              href="https://pixabay.com/users/liecio-3298866/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              liecio-3298866
+            </a>
+          </div>
+        </section>
       </div>
     </section>
   `;

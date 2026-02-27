@@ -39,14 +39,6 @@ const ROADMAP_COLUMNS: RoadmapColumn[] = [
         }
       },
       {
-        title: "Dynamic and fixed background update",
-        description: "Visual and behavior refresh for dynamic and static backgrounds.",
-        tag: {
-          label: "Design",
-          variant: "design"
-        }
-      },
-      {
         title: "Pomodoro extension",
         description: "Companion extension for quick access to focus sessions.",
         tag: {
@@ -70,12 +62,11 @@ const ROADMAP_COLUMNS: RoadmapColumn[] = [
     title: "In Progress",
     cards: [
       {
-        title: "Ambient sounds",
-        description:
-          "Add and mix ambient options like rain, wind, snow, fire, and similar nature sound layers.",
+        title: "Dynamic and fixed background update",
+        description: "Visual and behavior refresh for dynamic and static backgrounds.",
         tag: {
-          label: "Feature",
-          variant: "feature"
+          label: "Design",
+          variant: "design"
         }
       }
     ]
@@ -84,6 +75,15 @@ const ROADMAP_COLUMNS: RoadmapColumn[] = [
     id: "done",
     title: "Done",
     cards: [
+      {
+        title: "Ambient sounds",
+        description:
+          "Add and mix ambient options like rain, wind, snow, fire, and similar nature sound layers.",
+        tag: {
+          label: "Feature",
+          variant: "feature"
+        }
+      },
       {
         title: "Version 1.0 completed",
         description: "Initial public milestone delivered.",
