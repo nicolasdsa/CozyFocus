@@ -25,6 +25,8 @@ const cleanupDb = async (name: string) => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  globalThis.localStorage?.clear();
 });
 
 describe("player", () => {
@@ -62,6 +64,17 @@ describe("player", () => {
     const service = createPlayerService({ dbName });
     const root = createRoot();
     vi.spyOn(net, "isOnline").mockReturnValue(true);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          title: "Lofi Hip Hop Radio",
+          author_name: "LoFi Girl",
+          thumbnail_url: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg"
+        })
+      })
+    );
 
     await mountPlayerView(root, { service });
 
@@ -80,7 +93,10 @@ describe("player", () => {
     expect(setting?.embedUrl).toBe("https://www.youtube.com/embed/dQw4w9WgXcQ");
 
     const iframe = root.querySelector<HTMLIFrameElement>("iframe");
-    expect(iframe?.src).toBe(setting?.embedUrl);
+    expect(iframe?.src).toContain(setting?.embedUrl ?? "");
+    expect(iframe?.src).toContain("enablejsapi=1");
+    expect(root.querySelector('[data-testid="player-youtube-expand"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="player-youtube-volume"]')).toBeTruthy();
 
     await service.close();
     await cleanupDb(dbName);
