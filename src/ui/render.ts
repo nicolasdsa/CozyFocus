@@ -248,7 +248,7 @@ export const renderApp = (root: HTMLElement, options: RenderAppOptions = {}): vo
   const ambientStore = options.ambientStore ?? appAmbientStore;
 
   root.innerHTML = `
-    <div class="app-background-root" data-testid="app-background"></div>
+    <div id="bg-root" class="app-background-root" data-testid="app-background"></div>
     <div class="app-shell">
       <nav class="navbar" data-testid="nav">
         <a

@@ -158,6 +158,10 @@ button {
   background: rgba(2, 6, 23, 0);
 }
 
+.bg-media {
+  will-change: filter;
+}
+
 .activity-dock {
   position: absolute;
   top: var(--activity-dock-top);

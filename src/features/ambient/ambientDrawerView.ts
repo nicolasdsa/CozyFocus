@@ -143,6 +143,30 @@ export const mountAmbientDrawerView = (
                 Reset to default background
               </button>
             </div>
+            <div class="ambient-visuals__effects">
+              <label class="ambient-visuals__effect" for="visuals-overlay-input">
+                <span>Overlay Darkness</span>
+                <input
+                  id="visuals-overlay-input"
+                  type="range"
+                  min="0"
+                  max="80"
+                  step="1"
+                  data-testid="visuals-overlay"
+                />
+              </label>
+              <label class="ambient-visuals__effect" for="visuals-blur-input">
+                <span>Background Blur</span>
+                <input
+                  id="visuals-blur-input"
+                  type="range"
+                  min="0"
+                  max="20"
+                  step="1"
+                  data-testid="visuals-blur"
+                />
+              </label>
+            </div>
             <label class="ambient-visuals__add">
               <input
                 class="ambient-visuals__input"
@@ -183,6 +207,10 @@ export const mountAmbientDrawerView = (
   );
   const visualsReset = container.querySelector<HTMLButtonElement>('[data-testid="visuals-reset"]');
   const visualsInput = container.querySelector<HTMLInputElement>('[data-testid="visuals-add-image"]');
+  const visualsOverlayInput = container.querySelector<HTMLInputElement>(
+    '[data-testid="visuals-overlay"]'
+  );
+  const visualsBlurInput = container.querySelector<HTMLInputElement>('[data-testid="visuals-blur"]');
   const visualsGrid = container.querySelector<HTMLElement>('[data-testid="visuals-grid"]');
   const visualsStatus = container.querySelector<HTMLElement>('[data-testid="visuals-status"]');
 
@@ -201,6 +229,8 @@ export const mountAmbientDrawerView = (
     !visualsYoutubeApply ||
     !visualsReset ||
     !visualsInput ||
+    !visualsOverlayInput ||
+    !visualsBlurInput ||
     !visualsGrid ||
     !visualsStatus
   ) {
@@ -299,6 +329,8 @@ export const mountAmbientDrawerView = (
       visualsYoutubeApply.disabled = true;
       visualsReset.disabled = true;
       visualsInput.disabled = true;
+      visualsOverlayInput.disabled = true;
+      visualsBlurInput.disabled = true;
       visualsGrid.innerHTML = "";
       visualsStatus.textContent = "Visual backgrounds unavailable in this environment.";
       visualsStatus.setAttribute("data-tone", "error");
@@ -309,7 +341,15 @@ export const mountAmbientDrawerView = (
     visualsYoutubeInput.disabled = false;
     visualsYoutubeApply.disabled = false;
     visualsReset.disabled = false;
+    visualsOverlayInput.disabled = false;
+    visualsBlurInput.disabled = false;
     const { images, prefs } = backgroundManager.getState();
+    if (document.activeElement !== visualsOverlayInput) {
+      visualsOverlayInput.value = `${Math.round(prefs.overlayDarkness * 100)}`;
+    }
+    if (document.activeElement !== visualsBlurInput) {
+      visualsBlurInput.value = `${Math.round(prefs.backgroundBlurPx)}`;
+    }
     if (document.activeElement !== visualsYoutubeInput) {
       visualsYoutubeInput.value = prefs.selectedKind === "video" ? (prefs.youtubeUrl ?? "") : "";
     }
@@ -485,6 +525,20 @@ export const mountAmbientDrawerView = (
       .catch(() => {
         setVisualsStatus("Failed to reset background.", "error");
       });
+  });
+
+  bind(visualsOverlayInput, "input", () => {
+    if (!backgroundManager) {
+      return;
+    }
+    void backgroundManager.setOverlayDarkness(visualsOverlayInput.valueAsNumber / 100);
+  });
+
+  bind(visualsBlurInput, "input", () => {
+    if (!backgroundManager) {
+      return;
+    }
+    void backgroundManager.setBackgroundBlurPx(visualsBlurInput.valueAsNumber);
   });
 
   bind(visualsGrid, "click", (event) => {

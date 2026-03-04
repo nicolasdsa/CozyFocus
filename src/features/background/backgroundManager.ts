@@ -29,6 +29,8 @@ export interface BackgroundManager {
   selectImage: (imageId: string) => Promise<void>;
   selectVideo: (youtubeUrl: string) => Promise<void>;
   clearSelection: () => Promise<void>;
+  setOverlayDarkness: (value: number) => Promise<void>;
+  setBackgroundBlurPx: (value: number) => Promise<void>;
 }
 
 interface BackgroundManagerOptions {
@@ -74,7 +76,7 @@ const sanitizeVisualPrefs = (value: VisualPrefs | null, now: () => number): Visu
     selectedKind,
     selectedImageId: typeof value.selectedImageId === "string" ? value.selectedImageId : undefined,
     youtubeUrl: typeof value.youtubeUrl === "string" ? value.youtubeUrl : undefined,
-    overlayDarkness: clamp(value.overlayDarkness, 0, 1),
+    overlayDarkness: clamp(value.overlayDarkness, 0, 0.8),
     backgroundBlurPx: clamp(value.backgroundBlurPx, 0, 20),
     themeColor: typeof value.themeColor === "string" && value.themeColor.trim() ? value.themeColor : "blue",
     updatedAt: typeof value.updatedAt === "number" ? value.updatedAt : now()
@@ -252,6 +254,34 @@ export const createBackgroundManager = (
     await persistAndApplyPrefs(nextPrefs);
   };
 
+  const setOverlayDarkness = async (value: number): Promise<void> => {
+    await initialLoadPromise;
+    const normalized = clamp(value, 0, 0.8);
+    if (state.prefs.overlayDarkness === normalized) {
+      return;
+    }
+    const nextPrefs: VisualPrefs = {
+      ...state.prefs,
+      overlayDarkness: normalized,
+      updatedAt: now()
+    };
+    await persistAndApplyPrefs(nextPrefs);
+  };
+
+  const setBackgroundBlurPx = async (value: number): Promise<void> => {
+    await initialLoadPromise;
+    const normalized = clamp(value, 0, 20);
+    if (state.prefs.backgroundBlurPx === normalized) {
+      return;
+    }
+    const nextPrefs: VisualPrefs = {
+      ...state.prefs,
+      backgroundBlurPx: normalized,
+      updatedAt: now()
+    };
+    await persistAndApplyPrefs(nextPrefs);
+  };
+
   const initialLoadPromise = reloadFromStorage().catch((error: unknown) => {
     console.error("Failed to load visual background state", error);
   });
@@ -282,6 +312,8 @@ export const createBackgroundManager = (
       await initialLoadPromise;
       await selectVideo(youtubeUrl);
     },
-    clearSelection
+    clearSelection,
+    setOverlayDarkness,
+    setBackgroundBlurPx
   };
 };

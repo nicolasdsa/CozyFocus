@@ -216,6 +216,27 @@
   gap: 10px;
 }
 
+.ambient-visuals__effects {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ambient-visuals__effect {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ambient-visuals__effect input {
+  width: 100%;
+  accent-color: var(--color-brand-primary);
+}
+
 .ambient-visuals__add {
   display: inline-flex;
   align-items: center;

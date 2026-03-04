@@ -16,9 +16,9 @@ export const mountBackgroundView = (
   options: BackgroundViewOptions
 ): BackgroundViewHandle => {
   root.innerHTML = `
-    <div class="app-background__video" data-testid="bg-video-layer"></div>
-    <div class="app-background__image" data-testid="bg-image" hidden></div>
-    <div class="app-background__overlay" aria-hidden="true"></div>
+    <div class="app-background__video bg-media" data-testid="bg-video-layer"></div>
+    <div class="app-background__image bg-media" data-testid="bg-image" hidden></div>
+    <div class="app-background__overlay bg-overlay" aria-hidden="true"></div>
   `;
 
   const videoLayer = root.querySelector<HTMLElement>('[data-testid="bg-video-layer"]');
@@ -72,8 +72,7 @@ export const mountBackgroundView = (
 
   const syncFromState = () => {
     const state = options.manager!.getState();
-    const hasSelection = state.prefs.selectedKind !== "none";
-    applyOverlay(hasSelection ? state.prefs.overlayDarkness : 0, state.prefs.backgroundBlurPx);
+    applyOverlay(state.prefs.overlayDarkness, state.prefs.backgroundBlurPx);
 
     if (state.prefs.selectedKind === "video" && state.prefs.youtubeUrl) {
       const videoId = extractYouTubeId(state.prefs.youtubeUrl);
