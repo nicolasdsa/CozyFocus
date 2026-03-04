@@ -1,4 +1,5 @@
 import type { BackgroundManager } from "./backgroundManager";
+import { buildYouTubeBackgroundEmbedUrl, extractYouTubeId } from "./youtube";
 
 export interface BackgroundViewHandle {
   destroy: () => void;
@@ -15,22 +16,35 @@ export const mountBackgroundView = (
   options: BackgroundViewOptions
 ): BackgroundViewHandle => {
   root.innerHTML = `
+    <div class="app-background__video" data-testid="bg-video-layer"></div>
     <div class="app-background__image" data-testid="bg-image" hidden></div>
     <div class="app-background__overlay" aria-hidden="true"></div>
   `;
 
+  const videoLayer = root.querySelector<HTMLElement>('[data-testid="bg-video-layer"]');
   const imageLayer = root.querySelector<HTMLElement>('[data-testid="bg-image"]');
   const overlayLayer = root.querySelector<HTMLElement>(".app-background__overlay");
-  if (!imageLayer || !overlayLayer) {
+  if (!videoLayer || !imageLayer || !overlayLayer) {
     throw new Error("Background view is missing required elements");
   }
 
+  let videoIframe: HTMLIFrameElement | null = null;
+  let activeVideoId: string | null = null;
   let activeImageId: string | null = null;
   let activeObjectUrl: string | null = null;
 
   const applyOverlay = (darkness: number, blurPx: number) => {
     overlayLayer.style.backgroundColor = `rgba(${BACKGROUND_TINT}, ${darkness})`;
     imageLayer.style.filter = `blur(${blurPx}px)`;
+    videoLayer.style.filter = `blur(${blurPx}px)`;
+  };
+
+  const clearVideo = () => {
+    if (videoIframe) {
+      videoIframe.remove();
+      videoIframe = null;
+    }
+    activeVideoId = null;
   };
 
   const clearImage = () => {
@@ -45,9 +59,11 @@ export const mountBackgroundView = (
 
   if (!options.manager) {
     applyOverlay(0, 0);
+    clearVideo();
     clearImage();
     return {
       destroy: () => {
+        clearVideo();
         clearImage();
         root.innerHTML = "";
       }
@@ -58,6 +74,31 @@ export const mountBackgroundView = (
     const state = options.manager!.getState();
     const hasSelection = state.prefs.selectedKind !== "none";
     applyOverlay(hasSelection ? state.prefs.overlayDarkness : 0, state.prefs.backgroundBlurPx);
+
+    if (state.prefs.selectedKind === "video" && state.prefs.youtubeUrl) {
+      const videoId = extractYouTubeId(state.prefs.youtubeUrl);
+      if (videoId) {
+        clearImage();
+        if (activeVideoId === videoId && videoIframe) {
+          return;
+        }
+        clearVideo();
+        const iframe = document.createElement("iframe");
+        iframe.className = "app-background__video-frame";
+        iframe.setAttribute("data-testid", "bg-video");
+        iframe.setAttribute("loading", "lazy");
+        iframe.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture");
+        iframe.setAttribute("aria-hidden", "true");
+        iframe.tabIndex = -1;
+        iframe.src = buildYouTubeBackgroundEmbedUrl(videoId);
+        videoLayer.appendChild(iframe);
+        videoIframe = iframe;
+        activeVideoId = videoId;
+        return;
+      }
+    }
+
+    clearVideo();
 
     if (state.prefs.selectedKind !== "image" || !state.prefs.selectedImageId) {
       clearImage();
@@ -91,6 +132,7 @@ export const mountBackgroundView = (
   return {
     destroy: () => {
       unsubscribe();
+      clearVideo();
       clearImage();
       root.innerHTML = "";
     }

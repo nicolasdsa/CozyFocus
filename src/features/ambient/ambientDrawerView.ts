@@ -3,6 +3,7 @@ import type { AmbientDrawerTab, AmbientStore } from "./ambientStore";
 import { AMBIENT_TRACKS, type AmbientTrackId } from "./ambientTypes";
 import { MAX_VISUAL_IMAGES, type VisualImage } from "../background/backgroundTypes";
 import type { BackgroundManager } from "../background/backgroundManager";
+import { extractYouTubeId } from "../background/youtube";
 
 interface AmbientDrawerViewOptions {
   controller: AmbientController;
@@ -116,6 +117,32 @@ export const mountAmbientDrawerView = (
         </div>
         <div class="ambient-panel__content" data-panel="visuals">
           <div class="ambient-visuals" data-testid="visuals-panel">
+            <div class="ambient-visuals__youtube">
+              <label class="ambient-visuals__label" for="visuals-youtube-input">YouTube URL</label>
+              <div class="ambient-visuals__youtube-row">
+                <input
+                  id="visuals-youtube-input"
+                  class="ambient-visuals__youtube-input"
+                  type="url"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  data-testid="visuals-youtube-input"
+                />
+                <button
+                  type="button"
+                  class="ambient-visuals__youtube-apply"
+                  data-testid="visuals-youtube-apply"
+                >
+                  Apply
+                </button>
+              </div>
+              <button
+                type="button"
+                class="ambient-visuals__reset"
+                data-testid="visuals-reset"
+              >
+                Reset to default background
+              </button>
+            </div>
             <label class="ambient-visuals__add">
               <input
                 class="ambient-visuals__input"
@@ -148,6 +175,13 @@ export const mountAmbientDrawerView = (
   const soundsPanel = container.querySelector<HTMLElement>('[data-panel="sounds"]');
   const visualsPanel = container.querySelector<HTMLElement>('[data-panel="visuals"]');
   const masterInput = container.querySelector<HTMLInputElement>('[data-testid="ambient-master"]');
+  const visualsYoutubeInput = container.querySelector<HTMLInputElement>(
+    '[data-testid="visuals-youtube-input"]'
+  );
+  const visualsYoutubeApply = container.querySelector<HTMLButtonElement>(
+    '[data-testid="visuals-youtube-apply"]'
+  );
+  const visualsReset = container.querySelector<HTMLButtonElement>('[data-testid="visuals-reset"]');
   const visualsInput = container.querySelector<HTMLInputElement>('[data-testid="visuals-add-image"]');
   const visualsGrid = container.querySelector<HTMLElement>('[data-testid="visuals-grid"]');
   const visualsStatus = container.querySelector<HTMLElement>('[data-testid="visuals-status"]');
@@ -163,6 +197,9 @@ export const mountAmbientDrawerView = (
     !soundsPanel ||
     !visualsPanel ||
     !masterInput ||
+    !visualsYoutubeInput ||
+    !visualsYoutubeApply ||
+    !visualsReset ||
     !visualsInput ||
     !visualsGrid ||
     !visualsStatus
@@ -258,6 +295,9 @@ export const mountAmbientDrawerView = (
 
   const renderVisuals = () => {
     if (!backgroundManager) {
+      visualsYoutubeInput.disabled = true;
+      visualsYoutubeApply.disabled = true;
+      visualsReset.disabled = true;
       visualsInput.disabled = true;
       visualsGrid.innerHTML = "";
       visualsStatus.textContent = "Visual backgrounds unavailable in this environment.";
@@ -266,7 +306,13 @@ export const mountAmbientDrawerView = (
     }
 
     visualsInput.disabled = false;
+    visualsYoutubeInput.disabled = false;
+    visualsYoutubeApply.disabled = false;
+    visualsReset.disabled = false;
     const { images, prefs } = backgroundManager.getState();
+    if (document.activeElement !== visualsYoutubeInput) {
+      visualsYoutubeInput.value = prefs.selectedKind === "video" ? (prefs.youtubeUrl ?? "") : "";
+    }
     releaseMissingPreviewUrls(images);
 
     visualsGrid.innerHTML = "";
@@ -396,6 +442,48 @@ export const mountAmbientDrawerView = (
       })
       .catch(() => {
         setVisualsStatus("Failed to add image.", "error");
+      });
+  });
+
+  bind(visualsYoutubeApply, "click", () => {
+    if (!backgroundManager) {
+      return;
+    }
+    const youtubeUrl = visualsYoutubeInput.value.trim();
+    if (!extractYouTubeId(youtubeUrl)) {
+      setVisualsStatus("Enter a valid YouTube URL.", "error");
+      return;
+    }
+    void backgroundManager
+      .selectVideo(youtubeUrl)
+      .then(() => {
+        setVisualsStatus("Video background applied.");
+      })
+      .catch(() => {
+        setVisualsStatus("Failed to apply video.", "error");
+      });
+  });
+
+  bind(visualsYoutubeInput, "keydown", (event) => {
+    const keyboardEvent = event as KeyboardEvent;
+    if (keyboardEvent.key !== "Enter") {
+      return;
+    }
+    keyboardEvent.preventDefault();
+    visualsYoutubeApply.click();
+  });
+
+  bind(visualsReset, "click", () => {
+    if (!backgroundManager) {
+      return;
+    }
+    void backgroundManager
+      .clearSelection()
+      .then(() => {
+        setVisualsStatus("Background reset to default.");
+      })
+      .catch(() => {
+        setVisualsStatus("Failed to reset background.", "error");
       });
   });
 
