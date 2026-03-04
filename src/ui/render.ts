@@ -30,6 +30,11 @@ import {
 } from "../features/ambient/ambientService";
 import type { AmbientMixerSetting } from "../features/ambient/ambientSetting";
 import { AMBIENT_TRACKS } from "../features/ambient/ambientTypes";
+import {
+  createBackgroundManager,
+  type BackgroundManager
+} from "../features/background/backgroundManager";
+import { mountBackgroundView } from "../features/background/backgroundView";
 
 type CleanupTask = () => Promise<void> | void;
 type NavIcon = "coffee" | "calendar" | "article" | "roadmap" | "settings";
@@ -133,6 +138,7 @@ const renderFocusView = async (
     mountPomodoro: () => Promise<void>;
     ambientController: AmbientController;
     ambientStore: AmbientStore;
+    backgroundManager: BackgroundManager | null;
   }
 ): Promise<CleanupTask[]> => {
   root.innerHTML = `
@@ -161,7 +167,8 @@ const renderFocusView = async (
   const cleanups: CleanupTask[] = [];
   const ambientDrawerHandle = mountAmbientDrawerView(root, {
     controller: shared.ambientController,
-    store: shared.ambientStore
+    store: shared.ambientStore,
+    backgroundManager: shared.backgroundManager
   });
   cleanups.push(() => ambientDrawerHandle.destroy());
 
@@ -241,6 +248,7 @@ export const renderApp = (root: HTMLElement, options: RenderAppOptions = {}): vo
   const ambientStore = options.ambientStore ?? appAmbientStore;
 
   root.innerHTML = `
+    <div class="app-background-root" data-testid="app-background"></div>
     <div class="app-shell">
       <nav class="navbar" data-testid="nav">
         <a
@@ -330,6 +338,7 @@ export const renderApp = (root: HTMLElement, options: RenderAppOptions = {}): vo
   `;
 
   const viewRoot = qs<HTMLElement>(root, "view-root");
+  const appBackgroundRoot = qs<HTMLElement>(root, "app-background");
   const navButtons = root.querySelectorAll<HTMLElement>("[data-route]");
   const parking = qs<HTMLElement>(root, "view-parking");
   const dock = qs<HTMLElement>(root, "activity-dock");
@@ -344,6 +353,10 @@ export const renderApp = (root: HTMLElement, options: RenderAppOptions = {}): vo
   const ambientCarrier = qs<HTMLElement>(root, "activity-ambient-drawer");
   const hasIndexedDb = "indexedDB" in globalThis;
   const ambientService: AmbientService | null = hasIndexedDb ? createAmbientService() : null;
+  const backgroundManager: BackgroundManager | null = hasIndexedDb ? createBackgroundManager() : null;
+  mountBackgroundView(appBackgroundRoot, {
+    manager: backgroundManager
+  });
 
   const sharedPomodoroRoot = document.createElement("section");
   sharedPomodoroRoot.className = "center-stack";
@@ -403,6 +416,7 @@ export const renderApp = (root: HTMLElement, options: RenderAppOptions = {}): vo
     pomodoroRoot: sharedPomodoroRoot,
     ambientController,
     ambientStore,
+    backgroundManager,
     mountPomodoro: async () => {
       if (pomodoroHandle) {
         return;
@@ -611,6 +625,9 @@ export const renderApp = (root: HTMLElement, options: RenderAppOptions = {}): vo
       if (ambientService) {
         const ambientSetting = await ambientService.getSetting();
         applyAmbientFromStorage(ambientSetting, { pausePlaying: true });
+      }
+      if (backgroundManager) {
+        await backgroundManager.reloadFromStorage();
       }
       syncPomodoroDock();
       syncPlayerDock();

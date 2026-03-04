@@ -1,10 +1,13 @@
 import type { AmbientController } from "./ambientController";
 import type { AmbientDrawerTab, AmbientStore } from "./ambientStore";
 import { AMBIENT_TRACKS, type AmbientTrackId } from "./ambientTypes";
+import { MAX_VISUAL_IMAGES, type VisualImage } from "../background/backgroundTypes";
+import type { BackgroundManager } from "../background/backgroundManager";
 
 interface AmbientDrawerViewOptions {
   controller: AmbientController;
   store: AmbientStore;
+  backgroundManager?: BackgroundManager | null;
 }
 
 export interface AmbientDrawerViewHandle {
@@ -19,6 +22,7 @@ export const mountAmbientDrawerView = (
   options: AmbientDrawerViewOptions
 ): AmbientDrawerViewHandle => {
   const { controller, store } = options;
+  const backgroundManager = options.backgroundManager ?? null;
   const container = document.createElement("section");
   container.className = "ambient-mixer";
   container.innerHTML = `
@@ -111,8 +115,19 @@ export const mountAmbientDrawerView = (
           </div>
         </div>
         <div class="ambient-panel__content" data-panel="visuals">
-          <div class="ambient-visuals-empty">
-            <p>Visual overlays are coming soon.</p>
+          <div class="ambient-visuals" data-testid="visuals-panel">
+            <label class="ambient-visuals__add">
+              <input
+                class="ambient-visuals__input"
+                type="file"
+                accept="image/*"
+                multiple
+                data-testid="visuals-add-image"
+              />
+              <span>Add image</span>
+            </label>
+            <div class="ambient-visuals__status" data-testid="visuals-status" aria-live="polite"></div>
+            <div class="ambient-visuals__grid" data-testid="visuals-grid"></div>
           </div>
         </div>
       </div>
@@ -133,6 +148,9 @@ export const mountAmbientDrawerView = (
   const soundsPanel = container.querySelector<HTMLElement>('[data-panel="sounds"]');
   const visualsPanel = container.querySelector<HTMLElement>('[data-panel="visuals"]');
   const masterInput = container.querySelector<HTMLInputElement>('[data-testid="ambient-master"]');
+  const visualsInput = container.querySelector<HTMLInputElement>('[data-testid="visuals-add-image"]');
+  const visualsGrid = container.querySelector<HTMLElement>('[data-testid="visuals-grid"]');
+  const visualsStatus = container.querySelector<HTMLElement>('[data-testid="visuals-status"]');
 
   if (
     !toggleButton ||
@@ -144,12 +162,18 @@ export const mountAmbientDrawerView = (
     !panel ||
     !soundsPanel ||
     !visualsPanel ||
-    !masterInput
+    !masterInput ||
+    !visualsInput ||
+    !visualsGrid ||
+    !visualsStatus
   ) {
     throw new Error("Ambient drawer is missing required UI elements.");
   }
 
   let switchAnimationTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  let visualsStatusTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  const previewUrls = new Map<string, string>();
+
   const schedulePanelSwitchAnimation = () => {
     if (switchAnimationTimeoutId) {
       clearTimeout(switchAnimationTimeoutId);
@@ -159,6 +183,46 @@ export const mountAmbientDrawerView = (
       panel.classList.remove("ambient-panel--switching");
       switchAnimationTimeoutId = null;
     }, TAB_SWITCH_ANIMATION_MS);
+  };
+
+  const setVisualsStatus = (
+    message: string,
+    tone: "info" | "error" = "info",
+    hideAfterMs: number | null = 2200
+  ) => {
+    visualsStatus.textContent = message;
+    visualsStatus.setAttribute("data-tone", tone);
+    if (visualsStatusTimeoutId) {
+      clearTimeout(visualsStatusTimeoutId);
+      visualsStatusTimeoutId = null;
+    }
+    if (hideAfterMs && hideAfterMs > 0) {
+      visualsStatusTimeoutId = setTimeout(() => {
+        visualsStatus.textContent = "";
+        visualsStatusTimeoutId = null;
+      }, hideAfterMs);
+    }
+  };
+
+  const getPreviewUrl = (image: VisualImage): string => {
+    const cached = previewUrls.get(image.id);
+    if (cached) {
+      return cached;
+    }
+    const created = URL.createObjectURL(image.blob);
+    previewUrls.set(image.id, created);
+    return created;
+  };
+
+  const releaseMissingPreviewUrls = (images: VisualImage[]) => {
+    const nextIds = new Set(images.map((image) => image.id));
+    previewUrls.forEach((url, imageId) => {
+      if (nextIds.has(imageId)) {
+        return;
+      }
+      URL.revokeObjectURL(url);
+      previewUrls.delete(imageId);
+    });
   };
 
   const applyActiveTab = (activeTab: AmbientDrawerTab) => {
@@ -191,6 +255,52 @@ export const mountAmbientDrawerView = (
     trackToggles.set(track.id, toggle);
     trackVolumes.set(track.id, volume);
   });
+
+  const renderVisuals = () => {
+    if (!backgroundManager) {
+      visualsInput.disabled = true;
+      visualsGrid.innerHTML = "";
+      visualsStatus.textContent = "Visual backgrounds unavailable in this environment.";
+      visualsStatus.setAttribute("data-tone", "error");
+      return;
+    }
+
+    visualsInput.disabled = false;
+    const { images, prefs } = backgroundManager.getState();
+    releaseMissingPreviewUrls(images);
+
+    visualsGrid.innerHTML = "";
+    images.forEach((image) => {
+      const thumb = document.createElement("div");
+      thumb.className = "ambient-visual-thumb";
+      thumb.dataset.imageId = image.id;
+      thumb.setAttribute("data-testid", `visuals-img-${image.id}`);
+      thumb.setAttribute("aria-label", "Select visual background image");
+      thumb.setAttribute("role", "button");
+      thumb.tabIndex = 0;
+      thumb.classList.toggle(
+        "ambient-visual-thumb--selected",
+        prefs.selectedKind === "image" && prefs.selectedImageId === image.id
+      );
+
+      const preview = document.createElement("span");
+      preview.className = "ambient-visual-thumb__preview";
+      preview.style.backgroundImage = `url("${getPreviewUrl(image)}")`;
+      thumb.appendChild(preview);
+
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className = "trash-btn ambient-visual-thumb__delete";
+      deleteButton.dataset.imageId = image.id;
+      deleteButton.setAttribute("data-testid", `visuals-img-del-${image.id}`);
+      deleteButton.setAttribute("aria-label", "Delete image");
+      deleteButton.innerHTML =
+        '<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>';
+      thumb.appendChild(deleteButton);
+
+      visualsGrid.appendChild(thumb);
+    });
+  };
 
   const syncFromState = () => {
     const state = store.getState();
@@ -268,12 +378,83 @@ export const mountAmbientDrawerView = (
     });
   });
 
+  bind(visualsInput, "change", () => {
+    if (!backgroundManager || !visualsInput.files || visualsInput.files.length === 0) {
+      return;
+    }
+    const files = Array.from(visualsInput.files);
+    visualsInput.value = "";
+    void backgroundManager
+      .addImages(files)
+      .then((result) => {
+        if (result.rejected > 0) {
+          setVisualsStatus(`You can store up to ${MAX_VISUAL_IMAGES} images.`, "error");
+        } else if (result.added > 0) {
+          setVisualsStatus("Image added.");
+        }
+        renderVisuals();
+      })
+      .catch(() => {
+        setVisualsStatus("Failed to add image.", "error");
+      });
+  });
+
+  bind(visualsGrid, "click", (event) => {
+    if (!backgroundManager) {
+      return;
+    }
+    const target = event.target as HTMLElement | null;
+    if (!target) {
+      return;
+    }
+    const deleteButton = target.closest<HTMLButtonElement>("[data-testid^='visuals-img-del-']");
+    if (deleteButton?.dataset.imageId) {
+      void backgroundManager.deleteImage(deleteButton.dataset.imageId);
+      return;
+    }
+    const imageButton = target.closest<HTMLButtonElement>("[data-testid^='visuals-img-']");
+    if (imageButton?.dataset.imageId) {
+      void backgroundManager.selectImage(imageButton.dataset.imageId);
+    }
+  });
+
+  bind(visualsGrid, "keydown", (event) => {
+    if (!backgroundManager) {
+      return;
+    }
+    const keyboardEvent = event as KeyboardEvent;
+    if (keyboardEvent.key !== "Enter" && keyboardEvent.key !== " ") {
+      return;
+    }
+    const target = keyboardEvent.target as HTMLElement | null;
+    const imageButton = target?.closest<HTMLElement>("[data-testid^='visuals-img-']");
+    if (!imageButton?.dataset.imageId) {
+      return;
+    }
+    keyboardEvent.preventDefault();
+    void backgroundManager.selectImage(imageButton.dataset.imageId);
+  });
+
+  const detachBackgroundListener = backgroundManager
+    ? backgroundManager.subscribe(() => {
+        renderVisuals();
+      })
+    : null;
+  renderVisuals();
+
   const unsubscribe = store.subscribe(syncFromState);
 
   return {
     destroy: () => {
       unsubscribe();
+      detachBackgroundListener?.();
       detachActions.forEach((detach) => detach());
+      previewUrls.forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+      if (visualsStatusTimeoutId) {
+        clearTimeout(visualsStatusTimeoutId);
+      }
       if (switchAnimationTimeoutId) {
         clearTimeout(switchAnimationTimeoutId);
       }

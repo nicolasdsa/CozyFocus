@@ -7,6 +7,7 @@ import type {
 } from "../types";
 import type { MediaPlayerSetting } from "../features/player/playerTypes";
 import type { AmbientMixerSetting } from "../features/ambient/ambientSetting";
+import type { VisualImage, VisualPrefs } from "../features/background/backgroundTypes";
 
 export interface TaskRecord {
   id: string;
@@ -93,16 +94,22 @@ interface CozyFocusDB extends DBSchema {
     value:
       | MediaPlayerSetting
       | AmbientMixerSetting
+      | VisualPrefs
       | PomodoroDefaultsSetting
       | TaskFocusSetting
       | TimeFormatSetting;
+  };
+  visualAssets: {
+    key: string;
+    value: VisualImage;
+    indexes: { createdAt: number };
   };
 }
 
 export type CozyFocusDatabase = IDBPDatabase<CozyFocusDB>;
 
 const DB_NAME = "cozyfocus";
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 
 export const openCozyDB = (name: string = DB_NAME): Promise<CozyFocusDatabase> => {
   return openDB<CozyFocusDB>(name, DB_VERSION, {
@@ -158,6 +165,13 @@ export const openCozyDB = (name: string = DB_NAME): Promise<CozyFocusDatabase> =
 
       if (!db.objectStoreNames.contains("settings")) {
         db.createObjectStore("settings");
+      }
+
+      if (!db.objectStoreNames.contains("visualAssets")) {
+        const store = db.createObjectStore("visualAssets", { keyPath: "id" });
+        store.createIndex("createdAt", "createdAt");
+      } else {
+        ensureIndex("visualAssets", "createdAt", "createdAt");
       }
     }
   });

@@ -7,7 +7,8 @@ const STORE_NAMES = [
   "stats",
   "docs",
   "settings",
-  "tagLibrary"
+  "tagLibrary",
+  "visualAssets"
 ] as const;
 
 type StoreName = (typeof STORE_NAMES)[number];

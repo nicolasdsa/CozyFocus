@@ -246,6 +246,14 @@ export const resolveSettingKey = (record: unknown): string | null => {
     return "ambientMixer";
   }
 
+  if (
+    typeof record.selectedKind === "string" &&
+    typeof record.overlayDarkness === "number" &&
+    typeof record.backgroundBlurPx === "number"
+  ) {
+    return "visualPrefs";
+  }
+
   if (typeof record.dayKey === "string" && "taskId" in record) {
     return `tasks.currentFocus.${record.dayKey}`;
   }

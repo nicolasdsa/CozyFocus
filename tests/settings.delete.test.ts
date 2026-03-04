@@ -85,7 +85,7 @@ const seedAllStores = async () => {
 const clearAllStoresForTest = async () => {
   const db = await openCozyDB();
   const tx = db.transaction(
-    ["tasks", "notes", "docs", "tagLibrary", "sessions", "stats", "settings"],
+    ["tasks", "notes", "docs", "tagLibrary", "sessions", "stats", "settings", "visualAssets"],
     "readwrite"
   );
   await Promise.all([
@@ -95,7 +95,8 @@ const clearAllStoresForTest = async () => {
     tx.objectStore("tagLibrary").clear(),
     tx.objectStore("sessions").clear(),
     tx.objectStore("stats").clear(),
-    tx.objectStore("settings").clear()
+    tx.objectStore("settings").clear(),
+    tx.objectStore("visualAssets").clear()
   ]);
   await tx.done;
   db.close();

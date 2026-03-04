@@ -95,13 +95,14 @@ button {
   display: flex;
   height: 100%;
   position: relative;
-  background: radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.15), transparent 50%);
+  background: radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.1), transparent 50%);
   transition: opacity 0.2s ease;
   --activity-dock-top: 10px;
   --activity-dock-right: 200px;
   --activity-dock-width: min(560px, calc(100vw - 140px));
   --activity-dock-main-height: 62px;
   --activity-dock-gap: 12px;
+  z-index: 1;
 }
 
 .app-shell::before {
@@ -112,6 +113,30 @@ button {
     radial-gradient(circle at 10% 0%, rgba(148, 163, 184, 0.12), transparent 45%),
     radial-gradient(circle at 90% 30%, rgba(37, 99, 235, 0.18), transparent 50%);
   pointer-events: none;
+  z-index: 0;
+}
+
+.app-background-root {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.app-background__image {
+  position: absolute;
+  inset: -20px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transform: scale(1.03);
+}
+
+.app-background__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0);
 }
 
 .activity-dock {
