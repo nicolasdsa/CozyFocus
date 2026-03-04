@@ -270,6 +270,7 @@ export const mountSettingsView = (root: HTMLElement): void => {
       { label: "Sessions", counts: plan.sessions },
       { label: "Stats", counts: plan.stats },
       { label: "Settings", counts: plan.settings },
+      { label: "Visual Assets", counts: plan.visualAssets },
       plan.tags ? { label: "Tags", counts: plan.tags } : null
     ].filter(Boolean) as Array<{ label: string; counts: MergePlan["tasks"] }>;
 

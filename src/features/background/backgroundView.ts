@@ -1,4 +1,5 @@
 import type { BackgroundManager } from "./backgroundManager";
+import { deriveSurfaceVars, deriveThemeVars } from "./backgroundTypes";
 import { buildYouTubeBackgroundEmbedUrl, extractYouTubeId } from "./youtube";
 
 export interface BackgroundViewHandle {
@@ -32,11 +33,33 @@ export const mountBackgroundView = (
   let activeVideoId: string | null = null;
   let activeImageId: string | null = null;
   let activeObjectUrl: string | null = null;
+  const rootStyle = document.documentElement.style;
 
   const applyOverlay = (darkness: number, blurPx: number) => {
     overlayLayer.style.backgroundColor = `rgba(${BACKGROUND_TINT}, ${darkness})`;
     imageLayer.style.filter = `blur(${blurPx}px)`;
     videoLayer.style.filter = `blur(${blurPx}px)`;
+  };
+
+  const applyTheme = (themeColor: string) => {
+    const vars = deriveThemeVars(themeColor);
+    rootStyle.setProperty("--color-brand-primary", vars.primary);
+    rootStyle.setProperty("--color-brand-primaryHover", vars.primaryHover);
+    rootStyle.setProperty("--color-focus-ring", vars.focusRing);
+    rootStyle.setProperty("--color-brand-primary-rgb", vars.primaryRgb);
+    rootStyle.setProperty("--color-on-primary", vars.onPrimary);
+  };
+
+  const applySurface = (surfaceColor: string) => {
+    const vars = deriveSurfaceVars(surfaceColor);
+    rootStyle.setProperty("--color-bg-page", vars.bgPage);
+    rootStyle.setProperty("--color-bg-page-rgb", vars.bgPageRgb);
+    rootStyle.setProperty("--color-bg-page-deep-rgb", vars.bgPageDeepRgb);
+    rootStyle.setProperty("--color-surface-rgb", vars.surfaceRgb);
+    rootStyle.setProperty("--color-bg-card", vars.bgCard);
+    rootStyle.setProperty("--color-bg-card-hover", vars.bgCardHover);
+    rootStyle.setProperty("--color-border-card", vars.borderCard);
+    rootStyle.setProperty("--color-shell-fog", vars.shellFog);
   };
 
   const clearVideo = () => {
@@ -73,6 +96,8 @@ export const mountBackgroundView = (
   const syncFromState = () => {
     const state = options.manager!.getState();
     applyOverlay(state.prefs.overlayDarkness, state.prefs.backgroundBlurPx);
+    applyTheme(state.prefs.themeColor);
+    applySurface(state.prefs.surfaceColor);
 
     if (state.prefs.selectedKind === "video" && state.prefs.youtubeUrl) {
       const videoId = extractYouTubeId(state.prefs.youtubeUrl);

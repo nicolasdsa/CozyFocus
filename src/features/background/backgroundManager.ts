@@ -1,9 +1,15 @@
 import { getSetting, saveSetting } from "../../storage/settingsRepo";
 import { openCozyDB } from "../../storage/db";
 import {
+  DEFAULT_THEME_COLOR,
+  DEFAULT_SURFACE_COLOR,
   DEFAULT_VISUAL_PREFS,
+  MAX_CUSTOM_THEME_COLORS,
   MAX_VISUAL_IMAGES,
   VISUAL_PREFS_KEY,
+  normalizeSurfaceColor,
+  sanitizeCustomColorSlots,
+  normalizeThemeColor,
   type VisualImage,
   type VisualPrefs
 } from "./backgroundTypes";
@@ -31,6 +37,10 @@ export interface BackgroundManager {
   clearSelection: () => Promise<void>;
   setOverlayDarkness: (value: number) => Promise<void>;
   setBackgroundBlurPx: (value: number) => Promise<void>;
+  setThemeColor: (hexColor: string) => Promise<void>;
+  setSurfaceColor: (hexColor: string) => Promise<void>;
+  setCustomThemeColor: (index: number, hexColor: string) => Promise<void>;
+  setCustomSurfaceColor: (index: number, hexColor: string) => Promise<void>;
 }
 
 interface BackgroundManagerOptions {
@@ -78,7 +88,18 @@ const sanitizeVisualPrefs = (value: VisualPrefs | null, now: () => number): Visu
     youtubeUrl: typeof value.youtubeUrl === "string" ? value.youtubeUrl : undefined,
     overlayDarkness: clamp(value.overlayDarkness, 0, 0.8),
     backgroundBlurPx: clamp(value.backgroundBlurPx, 0, 20),
-    themeColor: typeof value.themeColor === "string" && value.themeColor.trim() ? value.themeColor : "blue",
+    themeColor: normalizeThemeColor(value.themeColor ?? DEFAULT_THEME_COLOR),
+    customThemeColors: sanitizeCustomColorSlots(
+      (value as VisualPrefs & { customThemeColors?: unknown }).customThemeColors,
+      "theme"
+    ),
+    surfaceColor: normalizeSurfaceColor(
+      (value as VisualPrefs & { surfaceColor?: unknown }).surfaceColor ?? DEFAULT_SURFACE_COLOR
+    ),
+    customSurfaceColors: sanitizeCustomColorSlots(
+      (value as VisualPrefs & { customSurfaceColors?: unknown }).customSurfaceColors,
+      "surface"
+    ),
     updatedAt: typeof value.updatedAt === "number" ? value.updatedAt : now()
   };
 };
@@ -282,6 +303,70 @@ export const createBackgroundManager = (
     await persistAndApplyPrefs(nextPrefs);
   };
 
+  const setThemeColor = async (hexColor: string): Promise<void> => {
+    await initialLoadPromise;
+    const normalized = normalizeThemeColor(hexColor);
+    if (state.prefs.themeColor === normalized) {
+      return;
+    }
+    const nextPrefs: VisualPrefs = {
+      ...state.prefs,
+      themeColor: normalized,
+      updatedAt: now()
+    };
+    await persistAndApplyPrefs(nextPrefs);
+  };
+
+  const setSurfaceColor = async (hexColor: string): Promise<void> => {
+    await initialLoadPromise;
+    const normalized = normalizeSurfaceColor(hexColor);
+    if (state.prefs.surfaceColor === normalized) {
+      return;
+    }
+    const nextPrefs: VisualPrefs = {
+      ...state.prefs,
+      surfaceColor: normalized,
+      updatedAt: now()
+    };
+    await persistAndApplyPrefs(nextPrefs);
+  };
+
+  const setCustomThemeColor = async (index: number, hexColor: string): Promise<void> => {
+    await initialLoadPromise;
+    if (index < 0 || index >= MAX_CUSTOM_THEME_COLORS) {
+      return;
+    }
+    const normalized = normalizeThemeColor(hexColor);
+    const nextCustom = sanitizeCustomColorSlots(state.prefs.customThemeColors, "theme");
+    nextCustom[index] = normalized;
+    const sanitized = sanitizeCustomColorSlots(nextCustom, "theme");
+    const nextPrefs: VisualPrefs = {
+      ...state.prefs,
+      customThemeColors: sanitized,
+      themeColor: normalized,
+      updatedAt: now()
+    };
+    await persistAndApplyPrefs(nextPrefs);
+  };
+
+  const setCustomSurfaceColor = async (index: number, hexColor: string): Promise<void> => {
+    await initialLoadPromise;
+    if (index < 0 || index >= MAX_CUSTOM_THEME_COLORS) {
+      return;
+    }
+    const normalized = normalizeSurfaceColor(hexColor);
+    const nextCustom = sanitizeCustomColorSlots(state.prefs.customSurfaceColors, "surface");
+    nextCustom[index] = normalized;
+    const sanitized = sanitizeCustomColorSlots(nextCustom, "surface");
+    const nextPrefs: VisualPrefs = {
+      ...state.prefs,
+      customSurfaceColors: sanitized,
+      surfaceColor: normalized,
+      updatedAt: now()
+    };
+    await persistAndApplyPrefs(nextPrefs);
+  };
+
   const initialLoadPromise = reloadFromStorage().catch((error: unknown) => {
     console.error("Failed to load visual background state", error);
   });
@@ -314,6 +399,10 @@ export const createBackgroundManager = (
     },
     clearSelection,
     setOverlayDarkness,
-    setBackgroundBlurPx
+    setBackgroundBlurPx,
+    setThemeColor,
+    setSurfaceColor,
+    setCustomThemeColor,
+    setCustomSurfaceColor
   };
 };

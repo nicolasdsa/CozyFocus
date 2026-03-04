@@ -88,7 +88,7 @@
   padding: 10px 16px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(37, 99, 235, 0.12);
+  background: rgba(var(--color-brand-primary-rgb), 0.12);
   color: var(--color-text-title);
   font-size: 13px;
   text-decoration: none;
@@ -97,7 +97,7 @@
 
 .settings-link:hover {
   transform: translateY(-1px);
-  background: rgba(37, 99, 235, 0.2);
+  background: rgba(var(--color-brand-primary-rgb), 0.2);
   color: var(--color-text-title);
 }
 
@@ -144,19 +144,19 @@
 }
 
 .settings-btn.is-active {
-  border-color: rgba(59, 130, 246, 0.4);
-  background: rgba(37, 99, 235, 0.35);
-  color: #e0e7ff;
+  border-color: rgba(var(--color-brand-primary-rgb), 0.4);
+  background: rgba(var(--color-brand-primary-rgb), 0.35);
+  color: var(--color-on-primary);
 }
 
 .settings-btn--primary {
-  border-color: rgba(59, 130, 246, 0.4);
-  background: rgba(37, 99, 235, 0.4);
-  color: #e0e7ff;
+  border-color: rgba(var(--color-brand-primary-rgb), 0.4);
+  background: rgba(var(--color-brand-primary-rgb), 0.4);
+  color: var(--color-on-primary);
 }
 
 .settings-btn--primary:hover {
-  background: rgba(37, 99, 235, 0.55);
+  background: rgba(var(--color-brand-primary-rgb), 0.55);
 }
 
 .settings-btn--danger {
@@ -189,7 +189,7 @@
 .settings-modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(8, 15, 26, 0.6);
+  background: rgba(var(--color-bg-page-deep-rgb), 0.6);
   backdrop-filter: blur(2px);
 }
 
@@ -202,7 +202,7 @@
   padding: 20px;
   border-radius: 20px;
   border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(var(--color-bg-page-rgb), 0.92);
   box-shadow: 0 24px 50px rgba(5, 8, 20, 0.6);
   display: flex;
   flex-direction: column;
@@ -242,7 +242,7 @@
   padding: 14px 16px;
   border-radius: 14px;
   border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(var(--color-bg-page-rgb), 0.45);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -287,7 +287,7 @@
   padding: 16px;
   border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(var(--color-bg-page-rgb), 0.5);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -313,7 +313,7 @@
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(var(--color-bg-page-rgb), 0.65);
   color: var(--color-text-title);
   font-family: "JetBrains Mono", "SFMono-Regular", ui-monospace, monospace;
   font-size: 12px;
@@ -325,16 +325,16 @@
   border-radius: 999px;
   border: 1px solid rgba(148, 163, 184, 0.2);
   padding: 6px;
-  background: rgba(15, 23, 42, 0.4);
+  background: rgba(var(--color-bg-page-rgb), 0.4);
 }
 
 .settings-import-file::file-selector-button {
   height: 32px;
   padding: 0 16px;
   border-radius: 999px;
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  background: rgba(37, 99, 235, 0.35);
-  color: #e0e7ff;
+  border: 1px solid rgba(var(--color-brand-primary-rgb), 0.4);
+  background: rgba(var(--color-brand-primary-rgb), 0.35);
+  color: var(--color-on-primary);
   cursor: pointer;
   font-size: 12px;
   margin-right: 12px;
@@ -343,7 +343,7 @@
 
 .settings-import-file::file-selector-button:hover {
   transform: translateY(-1px);
-  background: rgba(37, 99, 235, 0.5);
+  background: rgba(var(--color-brand-primary-rgb), 0.5);
 }
 
 .settings-import-actions {
@@ -357,7 +357,7 @@
   padding: 12px;
   border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.15);
-  background: rgba(15, 23, 42, 0.35);
+  background: rgba(var(--color-bg-page-rgb), 0.35);
   color: var(--color-text-body);
   font-size: 13px;
   display: grid;

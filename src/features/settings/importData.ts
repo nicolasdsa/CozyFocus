@@ -1,5 +1,5 @@
 import { openCozyDB, type CozyFocusDatabase } from "../../storage";
-import type { ExportBundle } from "./exportData";
+import type { ExportBundle, ExportVisualAsset } from "./exportData";
 import {
   decideDocMerge,
   decideNoteMerge,
@@ -37,6 +37,7 @@ export type MergePlan = {
   stats: { add: number; update: number; skip: number };
   docs: { add: number; update: number; skip: number };
   settings: { add: number; update: number; skip: number };
+  visualAssets: { add: number; update: number; skip: number };
   tags?: { add: number; update: number; skip: number };
 };
 
@@ -47,6 +48,7 @@ type MergeChanges = {
   stats: { add: Record<string, unknown>[]; update: Record<string, unknown>[] };
   docs: { add: Record<string, unknown>[]; update: Record<string, unknown>[] };
   settings: { add: Array<{ key: string; value: Record<string, unknown> }>; update: Array<{ key: string; value: Record<string, unknown> }> };
+  visualAssets: { add: CozyFocusDatabase["visualAssets"]["value"][]; update: CozyFocusDatabase["visualAssets"]["value"][] };
   tags: { add: Record<string, unknown>[]; update: Record<string, unknown>[] };
 };
 
@@ -60,7 +62,8 @@ const createEmptyPlan = (): MergePlan => ({
   sessions: { add: 0, update: 0, skip: 0 },
   stats: { add: 0, update: 0, skip: 0 },
   docs: { add: 0, update: 0, skip: 0 },
-  settings: { add: 0, update: 0, skip: 0 }
+  settings: { add: 0, update: 0, skip: 0 },
+  visualAssets: { add: 0, update: 0, skip: 0 }
 });
 
 const createEmptyChanges = (): MergeChanges => ({
@@ -70,8 +73,53 @@ const createEmptyChanges = (): MergeChanges => ({
   stats: { add: [], update: [] },
   docs: { add: [], update: [] },
   settings: { add: [], update: [] },
+  visualAssets: { add: [], update: [] },
   tags: { add: [], update: [] }
 });
+
+const fromBase64 = (base64: string): Uint8Array => {
+  if (typeof atob === "function") {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  }
+  const maybeBuffer = (globalThis as unknown as { Buffer?: { from: (v: string, enc: string) => Uint8Array } }).Buffer;
+  if (maybeBuffer) {
+    return maybeBuffer.from(base64, "base64");
+  }
+  throw new Error("Base64 decoding is unavailable in this environment.");
+};
+
+const decodeVisualAsset = (
+  record: ExportVisualAsset
+): CozyFocusDatabase["visualAssets"]["value"] | null => {
+  if (
+    !record ||
+    typeof record.id !== "string" ||
+    record.id.length === 0 ||
+    record.kind !== "image" ||
+    typeof record.mime !== "string" ||
+    typeof record.createdAt !== "number" ||
+    typeof record.blobBase64 !== "string"
+  ) {
+    return null;
+  }
+  try {
+    const bytes = fromBase64(record.blobBase64);
+    return {
+      id: record.id,
+      kind: "image",
+      mime: record.mime,
+      createdAt: record.createdAt,
+      blob: new Blob([bytes], { type: record.mime || "application/octet-stream" })
+    };
+  } catch {
+    return null;
+  }
+};
 
 export const parseBundle = (text: string): ExportBundle => {
   const parsed = JSON.parse(text) as ExportBundle;
@@ -208,6 +256,26 @@ const computeMergePlan = async (
     }
   }
 
+  for (const entry of bundle.data.visualAssets ?? []) {
+    const normalized = decodeVisualAsset(entry);
+    if (!normalized) {
+      plan.visualAssets.skip += 1;
+      continue;
+    }
+    const local = await db.get("visualAssets", normalized.id);
+    if (!local) {
+      plan.visualAssets.add += 1;
+      changes.visualAssets.add.push(normalized);
+      continue;
+    }
+    if (normalized.createdAt > local.createdAt) {
+      plan.visualAssets.update += 1;
+      changes.visualAssets.update.push(normalized);
+      continue;
+    }
+    plan.visualAssets.skip += 1;
+  }
+
   if (bundle.data.tags) {
     if (!plan.tags) {
       plan.tags = { add: 0, update: 0, skip: 0 };
@@ -267,6 +335,13 @@ export const applyMergePlan = async (
         value: CozyFocusDatabase["settings"]["value"];
       }>
     );
+    if (changes.visualAssets.add.length > 0 || changes.visualAssets.update.length > 0) {
+      const tx = db.transaction("visualAssets", "readwrite");
+      for (const asset of [...changes.visualAssets.add, ...changes.visualAssets.update]) {
+        await tx.store.put(asset);
+      }
+      await tx.done;
+    }
     await bulkPutTags(db, [...changes.tags.add, ...changes.tags.update]);
     return { plan };
   } finally {

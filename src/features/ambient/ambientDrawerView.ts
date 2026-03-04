@@ -1,7 +1,13 @@
 import type { AmbientController } from "./ambientController";
 import type { AmbientDrawerTab, AmbientStore } from "./ambientStore";
 import { AMBIENT_TRACKS, type AmbientTrackId } from "./ambientTypes";
-import { MAX_VISUAL_IMAGES, type VisualImage } from "../background/backgroundTypes";
+import {
+  DEFAULT_SURFACE_COLOR,
+  DEFAULT_THEME_COLOR,
+  MAX_CUSTOM_THEME_COLORS,
+  MAX_VISUAL_IMAGES,
+  type VisualImage
+} from "../background/backgroundTypes";
 import type { BackgroundManager } from "../background/backgroundManager";
 import { extractYouTubeId } from "../background/youtube";
 
@@ -17,6 +23,7 @@ export interface AmbientDrawerViewHandle {
 
 const toPercent = (value0to1: number): string => `${Math.round(value0to1 * 100)}`;
 const TAB_SWITCH_ANIMATION_MS = 180;
+const CUSTOM_COLOR_SLOTS = Array.from({ length: MAX_CUSTOM_THEME_COLORS }, (_, index) => index);
 
 export const mountAmbientDrawerView = (
   root: HTMLElement,
@@ -167,6 +174,70 @@ export const mountAmbientDrawerView = (
                 />
               </label>
             </div>
+            <section class="ambient-visuals__theme" data-testid="visuals-theme">
+              <h4 class="ambient-visuals__theme-title">Theme accents</h4>
+              <div class="ambient-visuals__theme-swatches">
+                <button
+                  type="button"
+                  class="ambient-theme-swatch ambient-theme-swatch--default"
+                  data-testid="theme-swatch-0"
+                  data-theme-color="${DEFAULT_THEME_COLOR}"
+                  aria-label="Default blue accent"
+                  title="Default blue"
+                ></button>
+                ${CUSTOM_COLOR_SLOTS.map(
+                  (index) => `
+                    <button
+                      type="button"
+                      class="ambient-theme-swatch ambient-theme-swatch--custom"
+                      data-testid="theme-swatch-${index + 1}"
+                      data-theme-slot="${index}"
+                      aria-label="Custom accent color ${index + 1}"
+                      title="Select or define accent color ${index + 1}"
+                    >+</button>
+                    <input
+                      class="ambient-theme-color-input"
+                      type="color"
+                      data-theme-color-input="${index}"
+                      value="${DEFAULT_THEME_COLOR}"
+                      aria-label="Pick custom accent color ${index + 1}"
+                    />
+                  `
+                ).join("")}
+              </div>
+            </section>
+            <section class="ambient-visuals__theme" data-testid="visuals-surface-theme">
+              <h4 class="ambient-visuals__theme-title">Surface colors</h4>
+              <div class="ambient-visuals__theme-swatches">
+                <button
+                  type="button"
+                  class="ambient-theme-swatch ambient-theme-swatch--default"
+                  data-testid="surface-swatch-0"
+                  data-surface-color="${DEFAULT_SURFACE_COLOR}"
+                  aria-label="Default surface color"
+                  title="Default surface"
+                ></button>
+                ${CUSTOM_COLOR_SLOTS.map(
+                  (index) => `
+                    <button
+                      type="button"
+                      class="ambient-theme-swatch ambient-theme-swatch--custom"
+                      data-testid="surface-swatch-${index + 1}"
+                      data-surface-slot="${index}"
+                      aria-label="Custom surface color ${index + 1}"
+                      title="Select or define surface color ${index + 1}"
+                    >+</button>
+                    <input
+                      class="ambient-theme-color-input"
+                      type="color"
+                      data-surface-color-input="${index}"
+                      value="${DEFAULT_SURFACE_COLOR}"
+                      aria-label="Pick custom surface color ${index + 1}"
+                    />
+                  `
+                ).join("")}
+              </div>
+            </section>
             <label class="ambient-visuals__add">
               <input
                 class="ambient-visuals__input"
@@ -211,6 +282,8 @@ export const mountAmbientDrawerView = (
     '[data-testid="visuals-overlay"]'
   );
   const visualsBlurInput = container.querySelector<HTMLInputElement>('[data-testid="visuals-blur"]');
+  const visualsTheme = container.querySelector<HTMLElement>('[data-testid="visuals-theme"]');
+  const visualsSurfaceTheme = container.querySelector<HTMLElement>('[data-testid="visuals-surface-theme"]');
   const visualsGrid = container.querySelector<HTMLElement>('[data-testid="visuals-grid"]');
   const visualsStatus = container.querySelector<HTMLElement>('[data-testid="visuals-status"]');
 
@@ -231,6 +304,8 @@ export const mountAmbientDrawerView = (
     !visualsInput ||
     !visualsOverlayInput ||
     !visualsBlurInput ||
+    !visualsTheme ||
+    !visualsSurfaceTheme ||
     !visualsGrid ||
     !visualsStatus
   ) {
@@ -331,6 +406,8 @@ export const mountAmbientDrawerView = (
       visualsInput.disabled = true;
       visualsOverlayInput.disabled = true;
       visualsBlurInput.disabled = true;
+      visualsTheme.setAttribute("aria-disabled", "true");
+      visualsSurfaceTheme.setAttribute("aria-disabled", "true");
       visualsGrid.innerHTML = "";
       visualsStatus.textContent = "Visual backgrounds unavailable in this environment.";
       visualsStatus.setAttribute("data-tone", "error");
@@ -343,6 +420,8 @@ export const mountAmbientDrawerView = (
     visualsReset.disabled = false;
     visualsOverlayInput.disabled = false;
     visualsBlurInput.disabled = false;
+    visualsTheme.removeAttribute("aria-disabled");
+    visualsSurfaceTheme.removeAttribute("aria-disabled");
     const { images, prefs } = backgroundManager.getState();
     if (document.activeElement !== visualsOverlayInput) {
       visualsOverlayInput.value = `${Math.round(prefs.overlayDarkness * 100)}`;
@@ -354,6 +433,48 @@ export const mountAmbientDrawerView = (
       visualsYoutubeInput.value = prefs.selectedKind === "video" ? (prefs.youtubeUrl ?? "") : "";
     }
     releaseMissingPreviewUrls(images);
+
+    const defaultAccent = visualsTheme.querySelector<HTMLButtonElement>("[data-theme-color]");
+    if (defaultAccent) {
+      defaultAccent.style.setProperty("--theme-swatch-color", DEFAULT_THEME_COLOR);
+      defaultAccent.classList.toggle("is-selected", prefs.themeColor === DEFAULT_THEME_COLOR);
+    }
+    const accentSwatches = visualsTheme.querySelectorAll<HTMLButtonElement>("[data-theme-slot]");
+    accentSwatches.forEach((swatch) => {
+      const slot = Number(swatch.dataset.themeSlot);
+      const color = prefs.customThemeColors[slot] ?? "";
+      const input = visualsTheme.querySelector<HTMLInputElement>(`[data-theme-color-input="${slot}"]`);
+      if (input && color) {
+        input.value = color;
+      }
+      swatch.classList.toggle("is-defined", Boolean(color));
+      swatch.classList.toggle("is-selected", Boolean(color) && color === prefs.themeColor);
+      swatch.style.setProperty("--theme-swatch-color", color || "rgba(148, 163, 184, 0.24)");
+      swatch.textContent = color ? "" : "+";
+      swatch.dataset.themeColor = color;
+    });
+
+    const defaultSurface = visualsSurfaceTheme.querySelector<HTMLButtonElement>("[data-surface-color]");
+    if (defaultSurface) {
+      defaultSurface.style.setProperty("--theme-swatch-color", DEFAULT_SURFACE_COLOR);
+      defaultSurface.classList.toggle("is-selected", prefs.surfaceColor === DEFAULT_SURFACE_COLOR);
+    }
+    const surfaceSwatches = visualsSurfaceTheme.querySelectorAll<HTMLButtonElement>("[data-surface-slot]");
+    surfaceSwatches.forEach((swatch) => {
+      const slot = Number(swatch.dataset.surfaceSlot);
+      const color = prefs.customSurfaceColors[slot] ?? "";
+      const input = visualsSurfaceTheme.querySelector<HTMLInputElement>(
+        `[data-surface-color-input="${slot}"]`
+      );
+      if (input && color) {
+        input.value = color;
+      }
+      swatch.classList.toggle("is-defined", Boolean(color));
+      swatch.classList.toggle("is-selected", Boolean(color) && color === prefs.surfaceColor);
+      swatch.style.setProperty("--theme-swatch-color", color || "rgba(148, 163, 184, 0.24)");
+      swatch.textContent = color ? "" : "+";
+      swatch.dataset.surfaceColor = color;
+    });
 
     visualsGrid.innerHTML = "";
     images.forEach((image) => {
@@ -539,6 +660,120 @@ export const mountAmbientDrawerView = (
       return;
     }
     void backgroundManager.setBackgroundBlurPx(visualsBlurInput.valueAsNumber);
+  });
+
+  bind(visualsTheme, "click", (event) => {
+    if (!backgroundManager) {
+      return;
+    }
+    const target = event.target as HTMLElement | null;
+    const swatch = target?.closest<HTMLButtonElement>(".ambient-theme-swatch");
+    if (!swatch) {
+      return;
+    }
+    const defaultColor = swatch.dataset.themeColor;
+    if (defaultColor && !swatch.dataset.themeSlot) {
+      void backgroundManager.setThemeColor(defaultColor);
+      return;
+    }
+    const slotRaw = swatch.dataset.themeSlot;
+    if (typeof slotRaw === "undefined") {
+      return;
+    }
+    const slot = Number(slotRaw);
+    const color = swatch.dataset.themeColor;
+    if (color) {
+      void backgroundManager.setThemeColor(color);
+      return;
+    }
+    const input = visualsTheme.querySelector<HTMLInputElement>(`[data-theme-color-input="${slot}"]`);
+    input?.click();
+  });
+
+  bind(visualsTheme, "dblclick", (event) => {
+    const target = event.target as HTMLElement | null;
+    const swatch = target?.closest<HTMLButtonElement>("[data-theme-slot]");
+    if (!swatch) {
+      return;
+    }
+    event.preventDefault();
+    const slot = Number(swatch.dataset.themeSlot);
+    const input = visualsTheme.querySelector<HTMLInputElement>(`[data-theme-color-input="${slot}"]`);
+    input?.click();
+  });
+
+  const themeInputs = visualsTheme.querySelectorAll<HTMLInputElement>("[data-theme-color-input]");
+  themeInputs.forEach((input) => {
+    bind(input, "input", () => {
+      if (!backgroundManager) {
+        return;
+      }
+      const slot = Number(input.dataset.themeColorInput);
+      if (!Number.isFinite(slot)) {
+        return;
+      }
+      void backgroundManager.setCustomThemeColor(slot, input.value);
+    });
+  });
+
+  bind(visualsSurfaceTheme, "click", (event) => {
+    if (!backgroundManager) {
+      return;
+    }
+    const target = event.target as HTMLElement | null;
+    const swatch = target?.closest<HTMLButtonElement>(".ambient-theme-swatch");
+    if (!swatch) {
+      return;
+    }
+    const defaultColor = swatch.dataset.surfaceColor;
+    if (defaultColor && !swatch.dataset.surfaceSlot) {
+      void backgroundManager.setSurfaceColor(defaultColor);
+      return;
+    }
+    const slotRaw = swatch.dataset.surfaceSlot;
+    if (typeof slotRaw === "undefined") {
+      return;
+    }
+    const slot = Number(slotRaw);
+    const color = swatch.dataset.surfaceColor;
+    if (color) {
+      void backgroundManager.setSurfaceColor(color);
+      return;
+    }
+    const input = visualsSurfaceTheme.querySelector<HTMLInputElement>(
+      `[data-surface-color-input="${slot}"]`
+    );
+    input?.click();
+  });
+
+  bind(visualsSurfaceTheme, "dblclick", (event) => {
+    const target = event.target as HTMLElement | null;
+    const swatch = target?.closest<HTMLButtonElement>("[data-surface-slot]");
+    if (!swatch) {
+      return;
+    }
+    event.preventDefault();
+    const slot = Number(swatch.dataset.surfaceSlot);
+    const input = visualsSurfaceTheme.querySelector<HTMLInputElement>(
+      `[data-surface-color-input="${slot}"]`
+    );
+    input?.click();
+  });
+
+  const surfaceInputs = visualsSurfaceTheme.querySelectorAll<HTMLInputElement>(
+    "[data-surface-color-input]"
+  );
+  surfaceInputs.forEach((input) => {
+    bind(input, "input", () => {
+      if (!backgroundManager) {
+        return;
+      }
+      const slot = Number(input.dataset.surfaceColorInput);
+      if (!Number.isFinite(slot)) {
+        return;
+      }
+      void backgroundManager.setCustomSurfaceColor(slot, input.value);
+    });
   });
 
   bind(visualsGrid, "click", (event) => {
