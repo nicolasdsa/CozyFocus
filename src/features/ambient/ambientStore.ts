@@ -1,7 +1,10 @@
 import { AMBIENT_TRACKS, type AmbientTrackId } from "./ambientTypes";
 
+export type AmbientDrawerTab = "sounds" | "visuals";
+
 export interface AmbientStoreState {
   drawerOpen: boolean;
+  activeTab: AmbientDrawerTab;
   masterVolume: number;
   trackVolumes: Record<AmbientTrackId, number>;
   playing: Record<AmbientTrackId, boolean>;
@@ -17,6 +20,7 @@ export interface AmbientStore {
   subscribe: (listener: AmbientListener) => () => void;
   setDrawerOpen: (open: boolean) => void;
   toggleDrawer: () => void;
+  setActiveTab: (tab: AmbientDrawerTab) => void;
   setTrackVolume: (trackId: AmbientTrackId, volume0to1: number) => void;
   setTrackPlaying: (trackId: AmbientTrackId, playing: boolean) => void;
   setMasterVolume: (volume0to1: number) => void;
@@ -62,6 +66,7 @@ export const createAmbientStore = (
 
   let state: AmbientStoreState = {
     drawerOpen: Boolean(initialState?.drawerOpen),
+    activeTab: initialState?.activeTab === "visuals" ? "visuals" : "sounds",
     masterVolume: clamp01(initialState?.masterVolume ?? DEFAULT_AMBIENT_MASTER_VOLUME),
     trackVolumes: {
       ...buildTrackVolumeRecord(DEFAULT_AMBIENT_TRACK_VOLUME),
@@ -106,6 +111,15 @@ export const createAmbientStore = (
       setState({
         ...state,
         drawerOpen: !state.drawerOpen
+      });
+    },
+    setActiveTab: (tab) => {
+      if (state.activeTab === tab) {
+        return;
+      }
+      setState({
+        ...state,
+        activeTab: tab
       });
     },
     setTrackVolume: (trackId, volume0to1) => {
