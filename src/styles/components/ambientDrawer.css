@@ -1,3 +1,7 @@
+.ambient-mixer {
+  transition: opacity 0.2s ease;
+}
+
 .ambient-toggle {
   position: fixed;
   right: 20px;

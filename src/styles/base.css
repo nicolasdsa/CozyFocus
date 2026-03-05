@@ -74,6 +74,11 @@ body.stealth .app-shell {
   opacity: 0;
 }
 
+body.stealth .ambient-mixer {
+  opacity: 0;
+  pointer-events: none;
+}
+
 h1,
 h2,
 h3,
