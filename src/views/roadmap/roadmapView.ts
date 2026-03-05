@@ -21,12 +21,12 @@ const ROADMAP_COLUMNS: RoadmapColumn[] = [
     title: "Planned",
     cards: [
       {
-        title: "Share streaks to Instagram Stories",
+        title: "Customize Pomodoro completion sound",
         description:
-          "Generate a polished story-ready card so you can share your current streak on Instagram in one tap.",
+          "Choose and personalize the sound that plays when a Pomodoro session ends to match your focus style.",
         tag: {
-          label: "Integration",
-          variant: "integration"
+          label: "Feature",
+          variant: "feature"
         }
       },
       {
@@ -62,11 +62,12 @@ const ROADMAP_COLUMNS: RoadmapColumn[] = [
     title: "In Progress",
     cards: [
       {
-        title: "Dynamic and fixed background update",
-        description: "Visual and behavior refresh for dynamic and static backgrounds.",
+        title: "Share streaks to Instagram Stories",
+        description:
+          "Generate a polished story-ready card so you can share your current streak on Instagram in one tap.",
         tag: {
-          label: "Design",
-          variant: "design"
+          label: "Integration",
+          variant: "integration"
         }
       }
     ]
@@ -90,6 +91,23 @@ const ROADMAP_COLUMNS: RoadmapColumn[] = [
         tag: {
           label: "Core",
           variant: "core"
+        }
+      },
+      {
+        title: "Dynamic and fixed background update",
+        description: "Visual and behavior refresh for dynamic and static backgrounds.",
+        tag: {
+          label: "Design",
+          variant: "design"
+        }
+      },
+      {
+        title: "Theme color selection",
+        description:
+          "Added theme color customization so you can choose the interface colors that fit your workflow.",
+        tag: {
+          label: "Design",
+          variant: "design"
         }
       }
     ]

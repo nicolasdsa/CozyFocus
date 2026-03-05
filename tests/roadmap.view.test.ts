@@ -62,17 +62,22 @@ describe("roadmap view", () => {
     const doneTitles = readCardTitles(done);
 
     expect(plannedTitles).toEqual([
-      "Share streaks to Instagram Stories",
+      "Customize Pomodoro completion sound",
       "Markdown notes editor improvements",
       "Pomodoro extension",
       "Mobile responsiveness"
     ]);
-    expect(progressTitles).toEqual(["Dynamic and fixed background update"]);
-    expect(doneTitles).toEqual(["Ambient sounds", "Version 1.0 completed"]);
+    expect(progressTitles).toEqual(["Share streaks to Instagram Stories"]);
+    expect(doneTitles).toEqual([
+      "Ambient sounds",
+      "Version 1.0 completed",
+      "Dynamic and fixed background update",
+      "Theme color selection"
+    ]);
 
     expect(planned.querySelectorAll("[data-testid^='roadmap-card-']").length).toBe(4);
     expect(progress.querySelectorAll("[data-testid^='roadmap-card-']").length).toBe(1);
-    expect(done.querySelectorAll("[data-testid^='roadmap-card-']").length).toBe(2);
+    expect(done.querySelectorAll("[data-testid^='roadmap-card-']").length).toBe(4);
   });
 
   it("places roadmap button directly above settings in navbar", () => {
