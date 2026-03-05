@@ -49,7 +49,9 @@ describe("ambient tabs", () => {
 
     expect(panel.getAttribute("data-active")).toBe("sounds");
     expect(soundsTab.classList.contains("ambient-tab--active")).toBe(true);
+    expect(soundsTab.classList.contains("is-active")).toBe(true);
     expect(visualsTab.classList.contains("ambient-tab--active")).toBe(false);
+    expect(visualsTab.classList.contains("is-active")).toBe(false);
   });
 
   it("switches to Visuals and toggles the switch animation class", () => {
@@ -60,6 +62,7 @@ describe("ambient tabs", () => {
       visualsTab.click();
 
       expect(panel.getAttribute("data-active")).toBe("visuals");
+      expect(visualsTab.classList.contains("is-active")).toBe(true);
       expect(panel.classList.contains("ambient-panel--switching")).toBe(true);
 
       vi.advanceTimersByTime(220);

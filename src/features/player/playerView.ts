@@ -19,6 +19,13 @@ export interface PlayerViewHandle {
 
 const YOUTUBE_EMBED_HOSTS = new Set(["www.youtube.com", "youtube.com", "m.youtube.com"]);
 const YOUTUBE_DEFAULT_VOLUME = 55;
+const setRangeProgress = (input: HTMLInputElement) => {
+  const min = Number(input.min || 0);
+  const max = Number(input.max || 100);
+  const value = Number.isFinite(input.valueAsNumber) ? input.valueAsNumber : min;
+  const percent = max > min ? ((value - min) / (max - min)) * 100 : 0;
+  input.style.setProperty("--range-progress", `${Math.max(0, Math.min(100, percent))}`);
+};
 
 const buildPlaceholder = (message: string): HTMLElement => {
   const el = document.createElement("div");
@@ -253,6 +260,7 @@ export const mountPlayerView = async (
     volume.max = "100";
     volume.step = "1";
     volume.value = String(YOUTUBE_DEFAULT_VOLUME);
+    setRangeProgress(volume);
     volume.setAttribute("data-testid", "player-youtube-volume");
     volume.setAttribute("aria-label", "YouTube volume");
 
@@ -316,6 +324,7 @@ export const mountPlayerView = async (
       isDraggingVolume = false;
     });
     volume.addEventListener("input", () => {
+      setRangeProgress(volume);
       sendYouTubeCommand(iframe, "setVolume", [Number(volume.value)]);
       if (Number(volume.value) > 0) {
         sendYouTubeCommand(iframe, "unMute");
@@ -377,6 +386,7 @@ export const mountPlayerView = async (
       if (typeof infoRecord.volume === "number" && !isDraggingVolume) {
         const clampedVolume = Math.max(0, Math.min(100, Math.round(infoRecord.volume)));
         volume.value = String(clampedVolume);
+        setRangeProgress(volume);
       }
     };
 

@@ -154,6 +154,7 @@ describe("visuals images", () => {
       throw new Error("Missing visual thumb");
     }
     thumb.click();
+    await waitFor(() => thumb.classList.contains("is-selected"));
 
     await waitFor(async () => {
       const db = await openCozyDB();

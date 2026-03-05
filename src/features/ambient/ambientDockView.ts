@@ -12,6 +12,13 @@ export interface AmbientDockViewHandle {
 }
 
 const toPercent = (value0to1: number): string => `${Math.round(value0to1 * 100)}`;
+const setRangeProgress = (input: HTMLInputElement) => {
+  const min = Number(input.min || 0);
+  const max = Number(input.max || 100);
+  const value = Number.isFinite(input.valueAsNumber) ? input.valueAsNumber : min;
+  const percent = max > min ? ((value - min) / (max - min)) * 100 : 0;
+  input.style.setProperty("--range-progress", `${Math.max(0, Math.min(100, percent))}`);
+};
 
 export const mountAmbientDockView = (
   root: HTMLElement,
@@ -28,6 +35,7 @@ export const mountAmbientDockView = (
       <label class="ambient-dock-popup__master" for="ambient-dock-master-input">
         <span>Master Volume</span>
         <input
+          class="ambient-track-volume"
           id="ambient-dock-master-input"
           type="range"
           min="0"
@@ -97,6 +105,7 @@ export const mountAmbientDockView = (
     const activeCount = AMBIENT_TRACKS.filter((track) => state.playing[track.id]).length;
     countEl.textContent = `${activeCount} active`;
     masterInput.value = toPercent(state.masterVolume);
+    setRangeProgress(masterInput);
 
     AMBIENT_TRACKS.forEach((track) => {
       const row = trackRows.get(track.id);
@@ -109,6 +118,7 @@ export const mountAmbientDockView = (
       row.classList.toggle("is-playing", isPlaying);
       toggle.textContent = isPlaying ? "Pause" : "Play";
       volume.value = toPercent(state.trackVolumes[track.id]);
+      setRangeProgress(volume);
     });
   };
 
@@ -128,6 +138,7 @@ export const mountAmbientDockView = (
   };
 
   bind(masterInput, "input", () => {
+    setRangeProgress(masterInput);
     controller.setMasterVolume(masterInput.valueAsNumber / 100);
   });
 
@@ -141,6 +152,7 @@ export const mountAmbientDockView = (
       void controller.toggle(track.id);
     });
     bind(volume, "input", () => {
+      setRangeProgress(volume);
       controller.setVolume(track.id, volume.valueAsNumber / 100);
     });
   });

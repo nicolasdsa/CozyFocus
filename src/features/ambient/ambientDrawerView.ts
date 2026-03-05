@@ -22,7 +22,14 @@ export interface AmbientDrawerViewHandle {
 }
 
 const toPercent = (value0to1: number): string => `${Math.round(value0to1 * 100)}`;
-const TAB_SWITCH_ANIMATION_MS = 180;
+const setRangeProgress = (input: HTMLInputElement) => {
+  const min = Number(input.min || 0);
+  const max = Number(input.max || 100);
+  const value = Number.isFinite(input.valueAsNumber) ? input.valueAsNumber : min;
+  const percent = max > min ? ((value - min) / (max - min)) * 100 : 0;
+  input.style.setProperty("--range-progress", `${Math.max(0, Math.min(100, percent))}`);
+};
+const TAB_SWITCH_ANIMATION_MS = 220;
 const CUSTOM_COLOR_SLOTS = Array.from({ length: MAX_CUSTOM_THEME_COLORS }, (_, index) => index);
 
 export const mountAmbientDrawerView = (
@@ -45,7 +52,7 @@ export const mountAmbientDrawerView = (
     </button>
     <aside class="ambient-drawer" data-testid="ambient-drawer" aria-hidden="true">
       <div class="ambient-drawer__header">
-        <div>
+        <div class="ambient-drawer__title-wrap">
           <h3>Ambient Mixer</h3>
         </div>
         <button
@@ -57,9 +64,9 @@ export const mountAmbientDrawerView = (
           X
         </button>
       </div>
-      <div class="ambient-tabs" data-testid="ambient-tabs" role="tablist" aria-label="Ambient panels">
+      <div class="ambient-tabs drawer-tabs" data-testid="ambient-tabs" role="tablist" aria-label="Ambient panels">
         <button
-          class="ambient-tab ambient-tab--active"
+          class="ambient-tab drawer-tab ambient-tab--active is-active"
           type="button"
           data-testid="ambient-tab-sounds"
           data-tab="sounds"
@@ -69,7 +76,7 @@ export const mountAmbientDrawerView = (
           Sounds
         </button>
         <button
-          class="ambient-tab"
+          class="ambient-tab drawer-tab"
           type="button"
           data-testid="ambient-tab-visuals"
           data-tab="visuals"
@@ -81,7 +88,7 @@ export const mountAmbientDrawerView = (
       </div>
       <div class="ambient-panel" data-testid="ambient-panel" data-active="sounds">
         <div class="ambient-panel__content ambient-panel__content--active" data-panel="sounds">
-          <label class="ambient-master" for="ambient-master-input">
+          <label class="ambient-master drawer-section" for="ambient-master-input">
             <span>Master Volume</span>
             <input
               id="ambient-master-input"
@@ -92,7 +99,7 @@ export const mountAmbientDrawerView = (
               data-testid="ambient-master"
             />
           </label>
-          <div class="ambient-track-list">
+          <div class="ambient-track-list drawer-section">
             ${AMBIENT_TRACKS.map(
               (track) => `
               <div class="ambient-track" data-testid="ambient-track-${track.id}" data-track-id="${track.id}">
@@ -122,9 +129,9 @@ export const mountAmbientDrawerView = (
             ).join("")}
           </div>
         </div>
-        <div class="ambient-panel__content" data-panel="visuals">
+        <div class="ambient-panel__content ambient-panel__content--visuals" data-panel="visuals">
           <div class="ambient-visuals" data-testid="visuals-panel">
-            <div class="ambient-visuals__youtube">
+            <div class="ambient-visuals__youtube drawer-section">
               <label class="ambient-visuals__label" for="visuals-youtube-input">YouTube URL</label>
               <div class="ambient-visuals__youtube-row">
                 <input
@@ -142,6 +149,9 @@ export const mountAmbientDrawerView = (
                   Apply
                 </button>
               </div>
+              <p class="ambient-visuals__youtube-help">
+                Video will play muted and loop in the background.
+              </p>
               <button
                 type="button"
                 class="ambient-visuals__reset"
@@ -150,9 +160,12 @@ export const mountAmbientDrawerView = (
                 Reset to default background
               </button>
             </div>
-            <div class="ambient-visuals__effects">
+            <div class="ambient-visuals__effects drawer-section">
               <label class="ambient-visuals__effect" for="visuals-overlay-input">
-                <span>Overlay Darkness</span>
+                <span class="ambient-visuals__effect-head">
+                  <span>Overlay Darkness</span>
+                  <span class="ambient-visuals__effect-value" data-testid="visuals-overlay-value">0%</span>
+                </span>
                 <input
                   id="visuals-overlay-input"
                   type="range"
@@ -163,7 +176,10 @@ export const mountAmbientDrawerView = (
                 />
               </label>
               <label class="ambient-visuals__effect" for="visuals-blur-input">
-                <span>Background Blur</span>
+                <span class="ambient-visuals__effect-head">
+                  <span>Background Blur</span>
+                  <span class="ambient-visuals__effect-value" data-testid="visuals-blur-value">0px</span>
+                </span>
                 <input
                   id="visuals-blur-input"
                   type="range"
@@ -174,7 +190,7 @@ export const mountAmbientDrawerView = (
                 />
               </label>
             </div>
-            <section class="ambient-visuals__theme" data-testid="visuals-theme">
+            <section class="ambient-visuals__theme drawer-section" data-testid="visuals-theme">
               <h4 class="ambient-visuals__theme-title">Theme accents</h4>
               <div class="ambient-visuals__theme-swatches">
                 <button
@@ -206,7 +222,7 @@ export const mountAmbientDrawerView = (
                 ).join("")}
               </div>
             </section>
-            <section class="ambient-visuals__theme" data-testid="visuals-surface-theme">
+            <section class="ambient-visuals__theme drawer-section" data-testid="visuals-surface-theme">
               <h4 class="ambient-visuals__theme-title">Surface colors</h4>
               <div class="ambient-visuals__theme-swatches">
                 <button
@@ -238,18 +254,15 @@ export const mountAmbientDrawerView = (
                 ).join("")}
               </div>
             </section>
-            <label class="ambient-visuals__add">
-              <input
-                class="ambient-visuals__input"
-                type="file"
-                accept="image/*"
-                multiple
-                data-testid="visuals-add-image"
-              />
-              <span>Add image</span>
-            </label>
+            <input
+              class="ambient-visuals__input"
+              type="file"
+              accept="image/*"
+              multiple
+              data-testid="visuals-add-image"
+            />
             <div class="ambient-visuals__status" data-testid="visuals-status" aria-live="polite"></div>
-            <div class="ambient-visuals__grid" data-testid="visuals-grid"></div>
+            <div class="ambient-visuals__grid visuals-grid" data-testid="visuals-grid"></div>
           </div>
         </div>
       </div>
@@ -282,6 +295,8 @@ export const mountAmbientDrawerView = (
     '[data-testid="visuals-overlay"]'
   );
   const visualsBlurInput = container.querySelector<HTMLInputElement>('[data-testid="visuals-blur"]');
+  const visualsOverlayValue = container.querySelector<HTMLElement>('[data-testid="visuals-overlay-value"]');
+  const visualsBlurValue = container.querySelector<HTMLElement>('[data-testid="visuals-blur-value"]');
   const visualsTheme = container.querySelector<HTMLElement>('[data-testid="visuals-theme"]');
   const visualsSurfaceTheme = container.querySelector<HTMLElement>('[data-testid="visuals-surface-theme"]');
   const visualsGrid = container.querySelector<HTMLElement>('[data-testid="visuals-grid"]');
@@ -304,6 +319,8 @@ export const mountAmbientDrawerView = (
     !visualsInput ||
     !visualsOverlayInput ||
     !visualsBlurInput ||
+    !visualsOverlayValue ||
+    !visualsBlurValue ||
     !visualsTheme ||
     !visualsSurfaceTheme ||
     !visualsGrid ||
@@ -370,7 +387,9 @@ export const mountAmbientDrawerView = (
   const applyActiveTab = (activeTab: AmbientDrawerTab) => {
     const soundsActive = activeTab === "sounds";
     soundsTab.classList.toggle("ambient-tab--active", soundsActive);
+    soundsTab.classList.toggle("is-active", soundsActive);
     visualsTab.classList.toggle("ambient-tab--active", !soundsActive);
+    visualsTab.classList.toggle("is-active", !soundsActive);
     soundsTab.setAttribute("aria-selected", soundsActive ? "true" : "false");
     visualsTab.setAttribute("aria-selected", soundsActive ? "false" : "true");
     panel.setAttribute("data-active", activeTab);
@@ -426,9 +445,13 @@ export const mountAmbientDrawerView = (
     if (document.activeElement !== visualsOverlayInput) {
       visualsOverlayInput.value = `${Math.round(prefs.overlayDarkness * 100)}`;
     }
+    setRangeProgress(visualsOverlayInput);
+    visualsOverlayValue.textContent = `${Math.round(prefs.overlayDarkness * 100)}%`;
     if (document.activeElement !== visualsBlurInput) {
       visualsBlurInput.value = `${Math.round(prefs.backgroundBlurPx)}`;
     }
+    setRangeProgress(visualsBlurInput);
+    visualsBlurValue.textContent = `${Math.round(prefs.backgroundBlurPx)}px`;
     if (document.activeElement !== visualsYoutubeInput) {
       visualsYoutubeInput.value = prefs.selectedKind === "video" ? (prefs.youtubeUrl ?? "") : "";
     }
@@ -479,7 +502,7 @@ export const mountAmbientDrawerView = (
     visualsGrid.innerHTML = "";
     images.forEach((image) => {
       const thumb = document.createElement("div");
-      thumb.className = "ambient-visual-thumb";
+      thumb.className = "ambient-visual-thumb visuals-thumb";
       thumb.dataset.imageId = image.id;
       thumb.setAttribute("data-testid", `visuals-img-${image.id}`);
       thumb.setAttribute("aria-label", "Select visual background image");
@@ -487,6 +510,10 @@ export const mountAmbientDrawerView = (
       thumb.tabIndex = 0;
       thumb.classList.toggle(
         "ambient-visual-thumb--selected",
+        prefs.selectedKind === "image" && prefs.selectedImageId === image.id
+      );
+      thumb.classList.toggle(
+        "is-selected",
         prefs.selectedKind === "image" && prefs.selectedImageId === image.id
       );
 
@@ -497,7 +524,7 @@ export const mountAmbientDrawerView = (
 
       const deleteButton = document.createElement("button");
       deleteButton.type = "button";
-      deleteButton.className = "trash-btn ambient-visual-thumb__delete";
+      deleteButton.className = "trash-btn ambient-visual-thumb__delete visuals-thumb__delete";
       deleteButton.dataset.imageId = image.id;
       deleteButton.setAttribute("data-testid", `visuals-img-del-${image.id}`);
       deleteButton.setAttribute("aria-label", "Delete image");
@@ -507,15 +534,34 @@ export const mountAmbientDrawerView = (
 
       visualsGrid.appendChild(thumb);
     });
+
+    if (images.length < MAX_VISUAL_IMAGES) {
+      const addThumb = document.createElement("div");
+      addThumb.className = "ambient-visual-thumb ambient-visual-thumb--add visuals-thumb visuals-thumb--add";
+      addThumb.setAttribute("data-testid", "visuals-add-tile");
+      addThumb.setAttribute("role", "button");
+      addThumb.setAttribute("aria-label", "Add image");
+      addThumb.tabIndex = 0;
+      addThumb.innerHTML = `
+        <span class="ambient-visual-thumb__add-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 2v8.6l3.4-3.4a1 1 0 0 1 1.4 0L13 14.4l2.6-2.6a1 1 0 0 1 1.4 0L19 13.8V6H5Zm0 12h14v-1.4l-3.1-3.1-2.6 2.6a1 1 0 0 1-1.4 0l-3.8-3.8L5 15.4V18Zm4-8a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/>
+          </svg>
+        </span>
+      `;
+      visualsGrid.appendChild(addThumb);
+    }
   };
 
   const syncFromState = () => {
     const state = store.getState();
     drawer.classList.toggle("drawer--open", state.drawerOpen);
+    container.classList.toggle("ambient-mixer--drawer-open", state.drawerOpen);
     drawer.setAttribute("aria-hidden", state.drawerOpen ? "false" : "true");
     toggleButton.setAttribute("aria-expanded", state.drawerOpen ? "true" : "false");
     applyActiveTab(state.activeTab);
     masterInput.value = toPercent(state.masterVolume);
+    setRangeProgress(masterInput);
 
     AMBIENT_TRACKS.forEach((track) => {
       const row = trackRows.get(track.id);
@@ -528,6 +574,7 @@ export const mountAmbientDrawerView = (
       row.classList.toggle("is-playing", isPlaying);
       toggle.textContent = isPlaying ? "Pause" : "Play";
       volume.value = toPercent(state.trackVolumes[track.id]);
+      setRangeProgress(volume);
     });
   };
 
@@ -553,6 +600,7 @@ export const mountAmbientDrawerView = (
     store.setDrawerOpen(false);
   });
   bind(masterInput, "input", () => {
+    setRangeProgress(masterInput);
     controller.setMasterVolume(masterInput.valueAsNumber / 100);
   });
 
@@ -581,6 +629,7 @@ export const mountAmbientDrawerView = (
       void controller.toggle(track.id);
     });
     bind(volume, "input", () => {
+      setRangeProgress(volume);
       controller.setVolume(track.id, volume.valueAsNumber / 100);
     });
   });
@@ -652,6 +701,8 @@ export const mountAmbientDrawerView = (
     if (!backgroundManager) {
       return;
     }
+    setRangeProgress(visualsOverlayInput);
+    visualsOverlayValue.textContent = `${visualsOverlayInput.valueAsNumber}%`;
     void backgroundManager.setOverlayDarkness(visualsOverlayInput.valueAsNumber / 100);
   });
 
@@ -659,6 +710,8 @@ export const mountAmbientDrawerView = (
     if (!backgroundManager) {
       return;
     }
+    setRangeProgress(visualsBlurInput);
+    visualsBlurValue.textContent = `${visualsBlurInput.valueAsNumber}px`;
     void backgroundManager.setBackgroundBlurPx(visualsBlurInput.valueAsNumber);
   });
 
@@ -789,6 +842,11 @@ export const mountAmbientDrawerView = (
       void backgroundManager.deleteImage(deleteButton.dataset.imageId);
       return;
     }
+    const addButton = target.closest<HTMLElement>('[data-testid="visuals-add-tile"]');
+    if (addButton) {
+      visualsInput.click();
+      return;
+    }
     const imageButton = target.closest<HTMLButtonElement>("[data-testid^='visuals-img-']");
     if (imageButton?.dataset.imageId) {
       void backgroundManager.selectImage(imageButton.dataset.imageId);
@@ -804,6 +862,12 @@ export const mountAmbientDrawerView = (
       return;
     }
     const target = keyboardEvent.target as HTMLElement | null;
+    const addButton = target?.closest<HTMLElement>('[data-testid="visuals-add-tile"]');
+    if (addButton) {
+      keyboardEvent.preventDefault();
+      visualsInput.click();
+      return;
+    }
     const imageButton = target?.closest<HTMLElement>("[data-testid^='visuals-img-']");
     if (!imageButton?.dataset.imageId) {
       return;
